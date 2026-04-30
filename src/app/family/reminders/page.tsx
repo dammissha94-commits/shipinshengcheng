@@ -22,8 +22,12 @@ import SectionTitle from '@/components/SectionTitle';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 
-function formatDate(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('zh-CN', {
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
+  const target = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return value ?? '—';
+  return target.toLocaleDateString('zh-CN', {
+    year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
@@ -184,18 +188,33 @@ function ReminderCard({
   item: FamilyReminderItem;
   relatedPerson: PersonProfile | null;
 }) {
+  const showNextLine =
+    item.isRecurringYearly &&
+    item.nextOccurrenceDate !== null &&
+    item.nextOccurrenceDate !== item.event.event_date;
+
   return (
     <article className="rounded-2xl border border-sand/70 bg-card p-4 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-base font-semibold leading-snug text-charcoal">{item.event.title}</h3>
-          <p className="mt-1 text-xs text-muted">{formatDate(item.event.event_date)} · {item.typeLabel}</p>
+          <p className="mt-1 text-xs text-muted">
+            原始：{formatDate(item.event.event_date)} · {item.typeLabel}
+          </p>
+          {showNextLine && (
+            <p className="mt-0.5 text-xs text-pine">下一次：{formatDate(item.nextOccurrenceDate)}</p>
+          )}
         </div>
         <span className="shrink-0 rounded-full bg-pine/10 px-2.5 py-1 text-xs font-medium text-pine">
           {item.badge}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {item.isRecurringYearly && (
+          <span className="rounded-full bg-pine/10 px-2.5 py-1 text-xs font-medium text-pine">
+            每年重复
+          </span>
+        )}
         {item.isAutoBirthday && (
           <span className="rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
             自动生日提醒

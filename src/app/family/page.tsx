@@ -110,6 +110,11 @@ function RecentFamilyNodeCard({ summary }: { summary: FamilyReminderSummary | nu
 }
 
 function RecentFamilyNodeItem({ item }: { item: FamilyReminderItem }) {
+  const dateValue = item.nextOccurrenceDate ?? item.event.event_date;
+  const dateLabel = item.isRecurringYearly && item.nextOccurrenceDate
+    ? `下一次 ${formatReminderDate(dateValue)}`
+    : formatReminderDate(dateValue);
+
   return (
     <Link
       href={`/family/calendar/${item.event.id}`}
@@ -117,7 +122,10 @@ function RecentFamilyNodeItem({ item }: { item: FamilyReminderItem }) {
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-charcoal">{item.event.title}</p>
-        <p className="text-xs text-muted">{formatReminderDate(item.event.event_date)} · {item.typeLabel}</p>
+        <p className="text-xs text-muted">
+          {dateLabel} · {item.typeLabel}
+          {item.isRecurringYearly ? ' · 每年重复' : ''}
+        </p>
       </div>
       <span className="shrink-0 rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
         {item.badge}

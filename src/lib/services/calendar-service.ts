@@ -1,7 +1,9 @@
 import type { ActionLog, FamilyCalendarEvent, PersonProfile } from '@/types/domain';
 import type {
   CalendarEventDetail,
+  CalendarEventOccurrence,
   CalendarEventPermission,
+  CalendarEventWithOccurrence,
   CreateFamilyCalendarEventInput,
   FamilyReminderItem,
   UpcomingFamilyEventsResult,
@@ -28,39 +30,152 @@ function requireClient(client?: SupabaseServiceClient): SupabaseServiceClient {
   return resolvedClient;
 }
 
-function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function todayDate(): Date {
+function todayLocal(): Date {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * DAY_MS);
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function daysUntilEvent(eventDate: string): number {
-  const target = new Date(`${eventDate}T00:00:00`);
-  return Math.ceil((target.getTime() - todayDate().getTime()) / DAY_MS);
+function parseDateOnly(value: string | null | undefined): { year: number; month: number; day: number } | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const probe = new Date(year, month - 1, day);
+  if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) {
+    return null;
+  }
+  return { year, month, day };
 }
 
-function isWithinDays(event: FamilyCalendarEvent, daysAhead: number): boolean {
-  const days = daysUntilEvent(event.event_date);
-  return days >= 0 && days <= daysAhead;
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
-function sortEvents(events: FamilyCalendarEvent[]): FamilyCalendarEvent[] {
-  return [...events].sort((a, b) => a.event_date.localeCompare(b.event_date));
+// Feb 29 is mapped to Feb 28 in non-leap years; lunar/leap-month logic is intentionally out of scope.
+function adjustMonthDayForYear(year: number, month: number, day: number): { month: number; day: number } {
+  if (month === 2 && day === 29 && !isLeapYear(year)) return { month: 2, day: 28 };
+  return { month, day };
 }
 
-function toReminderItem(event: FamilyCalendarEvent): FamilyReminderItem {
+function formatDateOnly(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export function getNextOccurrenceDate(
+  event: FamilyCalendarEvent,
+  referenceDate: Date = todayLocal()
+): string | null {
+  const parsed = parseDateOnly(event.event_date);
+  if (!parsed) return null;
+
+  if (event.recurrence !== 'yearly') {
+    return formatDateOnly(parsed.year, parsed.month, parsed.day);
+  }
+
+  const ref = startOfLocalDay(referenceDate);
+  for (let offset = 0; offset <= 1; offset += 1) {
+    const year = ref.getFullYear() + offset;
+    const adj = adjustMonthDayForYear(year, parsed.month, parsed.day);
+    const candidate = new Date(year, adj.month - 1, adj.day);
+    if (candidate.getTime() >= ref.getTime()) {
+      return formatDateOnly(year, adj.month, adj.day);
+    }
+  }
+  return null;
+}
+
+export function getDaysUntilOccurrence(
+  event: FamilyCalendarEvent,
+  referenceDate: Date = todayLocal()
+): number | null {
+  const next = getNextOccurrenceDate(event, referenceDate);
+  if (!next) return null;
+  const parsed = parseDateOnly(next);
+  if (!parsed) return null;
+  const target = new Date(parsed.year, parsed.month - 1, parsed.day);
+  const ref = startOfLocalDay(referenceDate);
+  return Math.round((target.getTime() - ref.getTime()) / DAY_MS);
+}
+
+function reminderBadgeFromDays(days: number | null): string {
+  if (days === null) return '日期无效';
+  if (days < 0) return '已过期';
+  if (days === 0) return '今天';
+  if (days === 1) return '明天';
+  if (days === 7) return '7天后';
+  if (days >= 2 && days <= 6) return '本周';
+  if (days >= 8 && days <= 30) return '本月';
+  return '即将到来';
+}
+
+export function enrichCalendarEventWithOccurrence(
+  event: FamilyCalendarEvent,
+  referenceDate: Date = todayLocal()
+): CalendarEventWithOccurrence {
+  const ref = startOfLocalDay(referenceDate);
+  const nextOccurrenceDate = getNextOccurrenceDate(event, ref);
+  const daysUntil = getDaysUntilOccurrence(event, ref);
+  const original = parseDateOnly(event.event_date);
+  const isPastOriginalDate = original
+    ? new Date(original.year, original.month - 1, original.day).getTime() < ref.getTime()
+    : false;
+
+  return {
+    event,
+    nextOccurrenceDate,
+    daysUntil,
+    reminderBadge: reminderBadgeFromDays(daysUntil),
+    isRecurringYearly: event.recurrence === 'yearly',
+    isPastOriginalDate,
+  };
+}
+
+export function getCalendarEventOccurrence(
+  event: FamilyCalendarEvent,
+  referenceDate: Date = todayLocal()
+): CalendarEventOccurrence {
+  const enriched = enrichCalendarEventWithOccurrence(event, referenceDate);
+  return {
+    nextOccurrenceDate: enriched.nextOccurrenceDate,
+    daysUntil: enriched.daysUntil,
+    reminderBadge: enriched.reminderBadge,
+    isRecurringYearly: enriched.isRecurringYearly,
+    isPastOriginalDate: enriched.isPastOriginalDate,
+  };
+}
+
+export function sortEventsByNextOccurrence(
+  events: FamilyCalendarEvent[],
+  referenceDate: Date = todayLocal()
+): FamilyCalendarEvent[] {
+  const ref = startOfLocalDay(referenceDate);
+  return [...events].sort((a, b) => {
+    const aNext = getNextOccurrenceDate(a, ref);
+    const bNext = getNextOccurrenceDate(b, ref);
+    if (!aNext && !bNext) return 0;
+    if (!aNext) return 1;
+    if (!bNext) return -1;
+    return aNext.localeCompare(bNext);
+  });
+}
+
+function toReminderItem(event: FamilyCalendarEvent, referenceDate: Date = todayLocal()): FamilyReminderItem {
+  const enriched = enrichCalendarEventWithOccurrence(event, referenceDate);
   return {
     event,
     typeLabel: getEventTypeLabel(event.event_type),
-    badge: getReminderBadge(event),
-    daysUntil: daysUntilEvent(event.event_date),
+    badge: enriched.reminderBadge,
+    daysUntil: enriched.daysUntil,
+    nextOccurrenceDate: enriched.nextOccurrenceDate,
+    isRecurringYearly: enriched.isRecurringYearly,
     isAutoBirthday: event.source_type === 'person_birthday',
   };
 }
@@ -186,13 +301,12 @@ export async function listUpcomingFamilyEvents(
   client?: SupabaseServiceClient
 ): Promise<UpcomingFamilyEventsResult> {
   const events = await listFamilyCalendarEvents(familyId, client);
-  return {
-    familyId,
-    daysAhead,
-    events: sortEvents(events)
-      .filter((event) => isWithinDays(event, daysAhead))
-      .map(toReminderItem),
-  };
+  const today = todayLocal();
+  const items = sortEventsByNextOccurrence(events, today)
+    .map((event) => toReminderItem(event, today))
+    .filter((item) => item.daysUntil !== null && item.daysUntil >= 0 && item.daysUntil <= daysAhead);
+
+  return { familyId, daysAhead, events: items };
 }
 
 export async function listTodayFamilyReminders(
@@ -200,19 +314,18 @@ export async function listTodayFamilyReminders(
   client?: SupabaseServiceClient
 ): Promise<FamilyReminderItem[]> {
   const events = await listFamilyCalendarEvents(familyId, client);
-  const today = todayDate();
-  const todayKey = dateKey(today);
-  const tomorrowKey = dateKey(addDays(today, 1));
-  const sevenDaysKey = dateKey(addDays(today, 7));
+  const today = todayLocal();
 
-  return sortEvents(events)
-    .filter((event) => {
-      if (event.event_date === todayKey && event.remind_day) return true;
-      if (event.event_date === tomorrowKey && event.remind_d1) return true;
-      if (event.event_date === sevenDaysKey && event.remind_d7) return true;
+  return sortEventsByNextOccurrence(events, today)
+    .map((event) => toReminderItem(event, today))
+    .filter((item) => {
+      const days = item.daysUntil;
+      if (days === null) return false;
+      if (days === 0 && item.event.remind_day) return true;
+      if (days === 1 && item.event.remind_d1) return true;
+      if (days === 7 && item.event.remind_d7) return true;
       return false;
-    })
-    .map(toReminderItem);
+    });
 }
 
 export async function listThisWeekFamilyEvents(
@@ -231,14 +344,11 @@ export async function listThisMonthFamilyEvents(
   return result.events;
 }
 
-export function getReminderBadge(event: FamilyCalendarEvent): string {
-  const days = daysUntilEvent(event.event_date);
-  if (days === 0) return '今天';
-  if (days === 1) return '明天';
-  if (days === 7) return '7天后';
-  if (days > 1 && days <= 7) return '本周';
-  if (days > 7 && days <= 30) return '本月';
-  return days > 30 ? '即将到来' : '已过期';
+export function getReminderBadge(
+  event: FamilyCalendarEvent,
+  referenceDate: Date = todayLocal()
+): string {
+  return reminderBadgeFromDays(getDaysUntilOccurrence(event, referenceDate));
 }
 
 export function getEventTypeLabel(eventType: string): string {

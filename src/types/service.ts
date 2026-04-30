@@ -318,7 +318,9 @@ export interface FamilyReminderItem {
   event: FamilyCalendarEvent;
   typeLabel: string;
   badge: string;
-  daysUntil: number;
+  daysUntil: number | null;
+  nextOccurrenceDate: string | null;
+  isRecurringYearly: boolean;
   isAutoBirthday: boolean;
 }
 
@@ -333,6 +335,18 @@ export interface CalendarEventPermission {
   canArchive: boolean;
   isAutoBirthday: boolean;
   redirectPersonId: string | null;
+}
+
+export interface CalendarEventOccurrence {
+  nextOccurrenceDate: string | null;
+  daysUntil: number | null;
+  reminderBadge: string;
+  isRecurringYearly: boolean;
+  isPastOriginalDate: boolean;
+}
+
+export interface CalendarEventWithOccurrence extends CalendarEventOccurrence {
+  event: FamilyCalendarEvent;
 }
 
 export interface FamilyReminderSummary {

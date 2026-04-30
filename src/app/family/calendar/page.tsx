@@ -10,7 +10,9 @@ import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import {
   archiveFamilyCalendarEvent,
   createFamilyCalendarEvent,
+  enrichCalendarEventWithOccurrence,
   listFamilyCalendarEvents,
+  sortEventsByNextOccurrence,
 } from '@/lib/services/calendar-service';
 import { listFamilyMembers } from '@/lib/services/member-service';
 import type {
@@ -68,26 +70,15 @@ const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
   { value: 'public', label: '公开可见' },
 ];
 
-function formatDate(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('zh-CN', {
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
+  const target = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return value ?? '—';
+  return target.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
-}
-
-function daysUntil(value: string): number {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const target = new Date(`${value}T00:00:00`);
-  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
-}
-
-function relativeLabel(value: string): string {
-  const days = daysUntil(value);
-  if (days === 0) return '今天';
-  if (days > 0) return `D-${days}`;
-  return `已过 ${Math.abs(days)} 天`;
 }
 
 function reminderText(event: FamilyCalendarEvent): string {
@@ -174,14 +165,23 @@ export default function FamilyCalendarPage() {
     load();
   }, [router]);
 
+  const sortedEvents = useMemo(() => sortEventsByNextOccurrence(events), [events]);
+
   const filteredEvents = useMemo(
-    () => (filter === 'all' ? events : events.filter((event) => event.event_type === filter)),
-    [events, filter]
+    () =>
+      filter === 'all'
+        ? sortedEvents
+        : sortedEvents.filter((event) => event.event_type === filter),
+    [sortedEvents, filter]
   );
 
   const upcomingEvents = useMemo(
-    () => events.filter((event) => daysUntil(event.event_date) >= 0).slice(0, 3),
-    [events]
+    () =>
+      sortedEvents
+        .map((event) => enrichCalendarEventWithOccurrence(event))
+        .filter((entry) => entry.daysUntil !== null && entry.daysUntil >= 0 && entry.daysUntil <= 30)
+        .slice(0, 3),
+    [sortedEvents]
   );
 
   async function handleSubmit(event: React.FormEvent) {
@@ -277,20 +277,23 @@ export default function FamilyCalendarPage() {
 
         {upcomingEvents.length > 0 && (
           <section className="mb-6">
-            <SectionTitle title="近期提醒" subtitle="按日历日期自动排序" />
+            <SectionTitle title="近期提醒" subtitle="按下一次发生日期自动排序" />
             <div className="grid gap-2">
-              {upcomingEvents.map((event) => (
+              {upcomingEvents.map((entry) => (
                 <Link
-                  key={event.id}
-                  href={`/family/calendar/${event.id}`}
+                  key={entry.event.id}
+                  href={`/family/calendar/${entry.event.id}`}
                   className="flex items-center justify-between rounded-xl border border-gold/25 bg-gold/10 px-3 py-2 transition-colors hover:bg-gold/15"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-charcoal">{event.title}</p>
-                    <p className="text-xs text-muted">{formatDate(event.event_date)} · {reminderText(event)}</p>
+                    <p className="truncate text-sm font-semibold text-charcoal">{entry.event.title}</p>
+                    <p className="text-xs text-muted">
+                      下一次：{formatDate(entry.nextOccurrenceDate)} · {reminderText(entry.event)}
+                      {entry.isRecurringYearly ? ' · 每年重复' : ''}
+                    </p>
                   </div>
                   <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-gold">
-                    {relativeLabel(event.event_date)}
+                    {entry.reminderBadge}
                   </span>
                 </Link>
               ))}
@@ -387,33 +390,50 @@ function CalendarEventCard({
   onArchive: () => void;
 }) {
   const typeColor = EVENT_TYPE_COLORS[event.event_type] ?? 'bg-sand/70 text-charcoal';
+  const occurrence = enrichCalendarEventWithOccurrence(event);
+  const showNextLine =
+    occurrence.isRecurringYearly &&
+    occurrence.nextOccurrenceDate !== null &&
+    occurrence.nextOccurrenceDate !== event.event_date;
 
   return (
     <article className="rounded-2xl border border-sand/70 bg-card p-4 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-base font-semibold leading-snug text-charcoal">{event.title}</h3>
-          <p className="mt-1 text-xs text-muted">{formatDate(event.event_date)} · {relativeLabel(event.event_date)}</p>
+          <p className="mt-1 text-xs text-muted">
+            原始：{formatDate(event.event_date)} · {occurrence.reminderBadge}
+          </p>
+          {showNextLine && (
+            <p className="mt-0.5 text-xs text-pine">下一次：{formatDate(occurrence.nextOccurrenceDate)}</p>
+          )}
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${typeColor}`}>
           {EVENT_TYPE_LABELS[event.event_type]}
         </span>
       </div>
-      {event.source_type === 'person_birthday' && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
-            自动生日提醒
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {occurrence.isRecurringYearly && (
+          <span className="rounded-full bg-pine/10 px-2.5 py-1 text-xs font-medium text-pine">
+            每年重复
           </span>
-          {relatedPerson && (
-            <>
-              <span className="text-xs text-muted">关联：{relatedPerson.display_name}</span>
-              <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-pine">
-                查看家人档案
-              </Link>
-            </>
-          )}
-        </div>
-      )}
+        )}
+        {event.source_type === 'person_birthday' && (
+          <>
+            <span className="rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
+              自动生日提醒
+            </span>
+            {relatedPerson && (
+              <>
+                <span className="text-xs text-muted">关联：{relatedPerson.display_name}</span>
+                <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-pine">
+                  查看家人档案
+                </Link>
+              </>
+            )}
+          </>
+        )}
+      </div>
       {event.description && <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-muted">{event.description}</p>}
       <div className="flex items-center justify-between gap-3 border-t border-sand/60 pt-3 text-xs text-muted">
         <span>提醒：{reminderText(event)}</span>

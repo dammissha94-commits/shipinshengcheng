@@ -9,6 +9,7 @@ import { hasSupabaseConfig } from '@/lib/supabase/client';
 import {
   archiveFamilyCalendarEvent,
   canEditCalendarEvent,
+  enrichCalendarEventWithOccurrence,
   getEventTypeLabel,
   getFamilyCalendarEvent,
   updateFamilyCalendarEvent,
@@ -303,6 +304,11 @@ export default function FamilyCalendarEventDetailPage() {
   const personRedirectHref = permission?.redirectPersonId
     ? `/family/members/${permission.redirectPersonId}`
     : personHref;
+  const occurrence = enrichCalendarEventWithOccurrence(event);
+  const showNextOccurrenceRow =
+    occurrence.isRecurringYearly &&
+    occurrence.nextOccurrenceDate !== null &&
+    occurrence.nextOccurrenceDate !== event.event_date;
 
   return (
     <Shell>
@@ -323,6 +329,14 @@ export default function FamilyCalendarEventDetailPage() {
                 {headerStatus}
               </span>
             )}
+            {occurrence.isRecurringYearly && (
+              <span className="rounded-full bg-cream/20 px-2.5 py-1 text-xs font-medium text-cream">
+                每年重复
+              </span>
+            )}
+            <span className="rounded-full bg-cream/15 px-2.5 py-1 text-xs font-medium text-cream">
+              {occurrence.reminderBadge}
+            </span>
             {isAutoBirthday && (
               <span className="rounded-full bg-gold/40 px-2.5 py-1 text-xs font-medium text-cream">
                 自动生日提醒
@@ -360,8 +374,11 @@ export default function FamilyCalendarEventDetailPage() {
           <dl className="space-y-2 text-sm">
             <InfoRow label="标题" value={event.title} />
             <InfoRow label="类型" value={getEventTypeLabel(event.event_type)} />
-            <InfoRow label="日期" value={formatDate(event.event_date)} />
-            <InfoRow label="重复" value={RECURRENCE_LABELS[event.recurrence] ?? event.recurrence} />
+            <InfoRow label="原始日期" value={formatDate(event.event_date)} />
+            {showNextOccurrenceRow && (
+              <InfoRow label="下一次发生" value={formatDate(occurrence.nextOccurrenceDate)} />
+            )}
+            <InfoRow label="重复规则" value={RECURRENCE_LABELS[event.recurrence] ?? event.recurrence} />
             <InfoRow label="可见范围" value={VISIBILITY_LABELS[event.visibility] ?? event.visibility} />
             <InfoRow label="状态" value={isArchived ? '已归档' : '进行中'} />
             <InfoRow label="创建时间" value={formatDateTime(event.created_at)} />
