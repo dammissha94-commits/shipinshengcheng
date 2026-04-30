@@ -1,6 +1,8 @@
 import type { ActionLog, FamilyCalendarEvent, PersonProfile } from '@/types/domain';
 import type {
   CreateFamilyCalendarEventInput,
+  FamilyReminderItem,
+  UpcomingFamilyEventsResult,
   UpdateFamilyCalendarEventInput,
 } from '@/types/service';
 import { getCurrentUser } from '@/lib/auth/auth-service';
@@ -11,6 +13,8 @@ import { throwServiceError } from './service-client';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function getClient(client?: SupabaseServiceClient): SupabaseServiceClient | null {
   if (client) return client;
   return hasSupabaseConfig() ? createSupabaseServiceClient() : null;
@@ -20,6 +24,43 @@ function requireClient(client?: SupabaseServiceClient): SupabaseServiceClient {
   const resolvedClient = getClient(client);
   if (!resolvedClient) throw new Error(SUPABASE_FALLBACK_MESSAGE);
   return resolvedClient;
+}
+
+function dateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function todayDate(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function daysUntilEvent(eventDate: string): number {
+  const target = new Date(`${eventDate}T00:00:00`);
+  return Math.ceil((target.getTime() - todayDate().getTime()) / DAY_MS);
+}
+
+function isWithinDays(event: FamilyCalendarEvent, daysAhead: number): boolean {
+  const days = daysUntilEvent(event.event_date);
+  return days >= 0 && days <= daysAhead;
+}
+
+function sortEvents(events: FamilyCalendarEvent[]): FamilyCalendarEvent[] {
+  return [...events].sort((a, b) => a.event_date.localeCompare(b.event_date));
+}
+
+function toReminderItem(event: FamilyCalendarEvent): FamilyReminderItem {
+  return {
+    event,
+    typeLabel: getEventTypeLabel(event.event_type),
+    badge: getReminderBadge(event),
+    daysUntil: daysUntilEvent(event.event_date),
+    isAutoBirthday: event.source_type === 'person_birthday',
+  };
 }
 
 async function writeActionLog(
@@ -62,6 +103,79 @@ export async function listFamilyCalendarEvents(
 
   throwServiceError(result.error, 'list family calendar events failed');
   return result.data ?? [];
+}
+
+export async function listUpcomingFamilyEvents(
+  familyId: string,
+  daysAhead = 30,
+  client?: SupabaseServiceClient
+): Promise<UpcomingFamilyEventsResult> {
+  const events = await listFamilyCalendarEvents(familyId, client);
+  return {
+    familyId,
+    daysAhead,
+    events: sortEvents(events)
+      .filter((event) => isWithinDays(event, daysAhead))
+      .map(toReminderItem),
+  };
+}
+
+export async function listTodayFamilyReminders(
+  familyId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyReminderItem[]> {
+  const events = await listFamilyCalendarEvents(familyId, client);
+  const today = todayDate();
+  const todayKey = dateKey(today);
+  const tomorrowKey = dateKey(addDays(today, 1));
+  const sevenDaysKey = dateKey(addDays(today, 7));
+
+  return sortEvents(events)
+    .filter((event) => {
+      if (event.event_date === todayKey && event.remind_day) return true;
+      if (event.event_date === tomorrowKey && event.remind_d1) return true;
+      if (event.event_date === sevenDaysKey && event.remind_d7) return true;
+      return false;
+    })
+    .map(toReminderItem);
+}
+
+export async function listThisWeekFamilyEvents(
+  familyId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyReminderItem[]> {
+  const result = await listUpcomingFamilyEvents(familyId, 7, client);
+  return result.events;
+}
+
+export async function listThisMonthFamilyEvents(
+  familyId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyReminderItem[]> {
+  const result = await listUpcomingFamilyEvents(familyId, 30, client);
+  return result.events;
+}
+
+export function getReminderBadge(event: FamilyCalendarEvent): string {
+  const days = daysUntilEvent(event.event_date);
+  if (days === 0) return '今天';
+  if (days === 1) return '明天';
+  if (days === 7) return '7天后';
+  if (days > 1 && days <= 7) return '本周';
+  if (days > 7 && days <= 30) return '本月';
+  return days > 30 ? '即将到来' : '已过期';
+}
+
+export function getEventTypeLabel(eventType: string): string {
+  if (eventType === 'birthday') return '生日';
+  if (eventType === 'anniversary') return '纪念日';
+  if (eventType === 'family_gathering') return '家庭聚会';
+  if (eventType === 'family_task') return '家庭事项';
+  if (eventType === 'memorial_day') return '纪念日';
+  if (eventType === 'notice') return '通知';
+  if (eventType === 'event') return '活动';
+  if (eventType === 'vote') return '议题';
+  return '家庭节点';
 }
 
 export async function createFamilyCalendarEvent(

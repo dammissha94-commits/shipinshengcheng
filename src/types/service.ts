@@ -314,6 +314,27 @@ export interface UpdateFamilyCalendarEventInput {
   sourceKey?: string | null;
 }
 
+export interface FamilyReminderItem {
+  event: FamilyCalendarEvent;
+  typeLabel: string;
+  badge: string;
+  daysUntil: number;
+  isAutoBirthday: boolean;
+}
+
+export interface FamilyReminderSummary {
+  todayCount: number;
+  weekCount: number;
+  monthCount: number;
+  upcoming: FamilyReminderItem[];
+}
+
+export interface UpcomingFamilyEventsResult {
+  familyId: string;
+  daysAhead: number;
+  events: FamilyReminderItem[];
+}
+
 export type FamilyStoryItem = FamilyStory;
 export type FamilyPhotoItem = FamilyPhoto;
 export type FamilyMeetingItem = FamilyMeeting;

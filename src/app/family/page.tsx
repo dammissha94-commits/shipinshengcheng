@@ -8,6 +8,11 @@ import { ensureProfile, getCurrentUser, signOut } from '@/lib/auth/auth-service'
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
+import {
+  listThisWeekFamilyEvents,
+  listTodayFamilyReminders,
+  listUpcomingFamilyEvents,
+} from '@/lib/services/calendar-service';
 import { listFamilyPersons, listPersonRelations } from '@/lib/services/person-service';
 import { mapProfilesToTreePersons } from '@/lib/family-view';
 import { calcCompletion } from '@/lib/storage';
@@ -15,6 +20,7 @@ import ProgressCard from '@/components/ProgressCard';
 import SectionTitle from '@/components/SectionTitle';
 import ActionGrid from '@/components/ActionGrid';
 import type { ActionItem } from '@/components/ActionGrid';
+import type { FamilyReminderItem, FamilyReminderSummary } from '@/types/service';
 
 const quickActions: ActionItem[] = [
   { label: '添加父母', description: '录入父亲、母亲', href: '/family/relatives/new?relation=father', icon: <PeopleIcon /> },
@@ -57,6 +63,66 @@ function ChatIcon() { return <IconBase><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 
 function CalendarIcon() { return <IconBase><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></IconBase>; }
 function GearIcon() { return <IconBase><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1 .6 1.8 1.8 0 0 0-.5 1.3V21a2 2 0 0 1-4 0v-.06A1.8 1.8 0 0 0 8 19.4a1.8 1.8 0 0 0-1.98.36l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.8 1.8 0 0 0 3.6 15a1.8 1.8 0 0 0-.6-1 1.8 1.8 0 0 0-1.3-.5H1.6a2 2 0 0 1 0-4h.06A1.8 1.8 0 0 0 3.6 8a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04A1.8 1.8 0 0 0 8 3.6a1.8 1.8 0 0 0 1-.6 1.8 1.8 0 0 0 .5-1.3V1.6a2 2 0 0 1 4 0v.06A1.8 1.8 0 0 0 15 3.6a1.8 1.8 0 0 0 1.98-.36l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 .6 1 1.8 1.8 0 0 0 1.3.5h.1a2 2 0 0 1 0 4h-.06A1.8 1.8 0 0 0 19.4 15Z" /></IconBase>; }
 
+function formatReminderDate(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function RecentFamilyNodeCard({ summary }: { summary: FamilyReminderSummary | null }) {
+  const upcoming = summary?.upcoming ?? [];
+
+  return (
+    <div className="mb-6">
+      <SectionTitle title="近期家庭节点" rightElement={<Link href="/family/reminders" className="text-sm text-gold">查看全部提醒</Link>} />
+      <div className="rounded-2xl border border-sand/60 bg-card p-4 shadow-sm">
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-pine/10 px-3 py-2">
+            <p className="text-xs text-muted">今日提醒</p>
+            <p className="mt-1 text-lg font-bold text-pine">{summary?.todayCount ?? 0}</p>
+          </div>
+          <div className="rounded-xl bg-gold/10 px-3 py-2">
+            <p className="text-xs text-muted">本周提醒</p>
+            <p className="mt-1 text-lg font-bold text-gold">{summary?.weekCount ?? 0}</p>
+          </div>
+        </div>
+
+        {upcoming.length === 0 ? (
+          <p className="rounded-xl bg-cream px-3 py-3 text-sm text-muted">近期暂无家庭节点提醒</p>
+        ) : (
+          <div className="space-y-2">
+            {upcoming.map((item) => <RecentFamilyNodeItem key={item.event.id} item={item} />)}
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link href="/family/reminders" className="rounded-xl bg-pine px-3 py-2.5 text-center text-sm font-semibold text-cream">
+            查看全部提醒
+          </Link>
+          <Link href="/family/calendar" className="rounded-xl border border-pine px-3 py-2.5 text-center text-sm font-semibold text-pine">
+            打开家族日历
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecentFamilyNodeItem({ item }: { item: FamilyReminderItem }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-cream px-3 py-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-charcoal">{item.event.title}</p>
+        <p className="text-xs text-muted">{formatReminderDate(item.event.event_date)} · {item.typeLabel}</p>
+      </div>
+      <span className="shrink-0 rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
+        {item.badge}
+      </span>
+    </div>
+  );
+}
+
 function PersonDot({ relation, persons }: { relation: Relation; persons: ReturnType<typeof mapProfilesToTreePersons> }) {
   const person = persons.find((p) => p.relation === relation);
   return (
@@ -71,6 +137,7 @@ export default function FamilyPage() {
   const [family, setFamily] = useState<FamilySpace | null>(null);
   const [profiles, setProfiles] = useState<PersonProfile[]>([]);
   const [relations, setRelations] = useState<PersonRelation[]>([]);
+  const [reminderSummary, setReminderSummary] = useState<FamilyReminderSummary | null>(null);
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -97,12 +164,21 @@ export default function FamilyPage() {
           return;
         }
         setFamily(currentFamily);
-        const [familyProfiles, familyRelations] = await Promise.all([
+        const [familyProfiles, familyRelations, todayReminders, weekReminders, upcomingEvents] = await Promise.all([
           listFamilyPersons(currentFamily.id),
           listPersonRelations(currentFamily.id),
+          listTodayFamilyReminders(currentFamily.id),
+          listThisWeekFamilyEvents(currentFamily.id),
+          listUpcomingFamilyEvents(currentFamily.id, 30),
         ]);
         setProfiles(familyProfiles);
         setRelations(familyRelations);
+        setReminderSummary({
+          todayCount: todayReminders.length,
+          weekCount: weekReminders.length,
+          monthCount: upcomingEvents.events.length,
+          upcoming: upcomingEvents.events.slice(0, 3),
+        });
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : '加载家堂失败');
       } finally {
@@ -179,6 +255,8 @@ export default function FamilyPage() {
           <SectionTitle title="快速入口" subtitle="添加家人，完善家族关系" />
           <ActionGrid items={quickActions} cols={3} />
         </div>
+
+        <RecentFamilyNodeCard summary={reminderSummary} />
 
         <div className="mb-6">
           <SectionTitle title="三代谱预览" rightElement={<Link href="/family/tree" className="text-sm text-gold">查看详情</Link>} />

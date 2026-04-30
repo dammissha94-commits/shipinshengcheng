@@ -268,6 +268,9 @@ export default function FamilyCalendarPage() {
           <p className="mt-1 text-sm text-cream/70">
             {events.length} 个家庭节点 · 生日、纪念日与家庭事项集中提醒
           </p>
+          <Link href="/family/reminders" className="mt-4 inline-flex rounded-xl bg-cream/10 px-3 py-2 text-sm font-semibold text-cream">
+            查看提醒中心
+          </Link>
         </div>
 
         {error && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
