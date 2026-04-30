@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmail, signUpWithEmail } from '@/lib/auth/auth-service';
+import { sanitizeRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -16,7 +17,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMessage('');
-    const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/family';
+    const redirectTo = sanitizeRedirectPath(new URLSearchParams(window.location.search).get('redirect'));
 
     if (!hasSupabaseConfig()) {
       setMessage('尚未配置 Supabase 环境变量，请先配置 .env.local');

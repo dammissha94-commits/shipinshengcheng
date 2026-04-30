@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureProfile } from '@/lib/auth/auth-service';
+import { sanitizeRedirectPath } from '@/lib/auth/redirect';
 import { createSupabaseBrowserClient, hasSupabaseConfig } from '@/lib/supabase/client';
 
 export default function AuthCallbackPage() {
@@ -19,7 +20,7 @@ export default function AuthCallbackPage() {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
-        const redirectTo = url.searchParams.get('redirect') || '/family';
+        const redirectTo = sanitizeRedirectPath(url.searchParams.get('redirect'));
 
         if (!code) {
           router.replace(`/login?redirect=${encodeURIComponent(redirectTo)}`);
