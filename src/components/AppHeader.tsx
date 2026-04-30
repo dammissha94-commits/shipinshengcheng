@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AppHeaderProps {
   title: string;
@@ -18,32 +20,36 @@ export default function AppHeader({
 
   return (
     <header
-      className={`sticky top-0 z-40 flex items-center h-14 px-4 gap-3
-        ${isPine ? 'bg-pine text-cream' : 'bg-card border-b border-sand text-charcoal'}`}
+      className={cn(
+        'sticky top-0 z-40 flex h-14 items-center gap-3 px-4 backdrop-blur',
+        isPine ? 'bg-pine text-cream' : 'border-b border-sand/80 bg-card/95 text-charcoal'
+      )}
     >
       {backHref ? (
         <Link
           href={backHref}
-          className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0
-            ${isPine ? 'hover:bg-white/10' : 'hover:bg-sand'} transition-colors`}
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
+            isPine ? 'hover:bg-white/10' : 'hover:bg-sand'
+          )}
           aria-label="返回"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <ChevronLeft size={19} strokeWidth={2.4} />
         </Link>
       ) : (
         <div className="w-8" />
       )}
 
-      <h1 className={`flex-1 text-center text-base font-semibold tracking-wide truncate
-        ${isPine ? 'text-cream' : 'text-charcoal'}`}>
+      <h1
+        className={cn(
+          'flex-1 truncate text-center text-base font-semibold tracking-wide',
+          isPine ? 'text-cream' : 'text-charcoal'
+        )}
+      >
         {title}
       </h1>
 
-      <div className="w-8 flex justify-end shrink-0">
-        {rightElement}
-      </div>
+      <div className="flex w-8 shrink-0 justify-end">{rightElement}</div>
     </header>
   );
 }

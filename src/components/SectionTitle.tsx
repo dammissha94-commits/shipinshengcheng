@@ -8,16 +8,12 @@ interface SectionTitleProps {
 
 export default function SectionTitle({ title, subtitle, rightElement }: SectionTitleProps) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div>
-        <h2 className="text-base font-semibold text-charcoal tracking-wide">{title}</h2>
-        {subtitle && (
-          <p className="text-xs text-muted mt-0.5">{subtitle}</p>
-        )}
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="truncate text-base font-semibold tracking-wide text-charcoal">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-muted">{subtitle}</p>}
       </div>
-      {rightElement && (
-        <div className="text-sm text-gold font-medium">{rightElement}</div>
-      )}
+      {rightElement && <div className="shrink-0 text-sm font-medium text-gold">{rightElement}</div>}
     </div>
   );
 }

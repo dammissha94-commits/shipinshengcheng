@@ -9,6 +9,7 @@ import { loginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import { formatTempleName } from '@/lib/family-naming';
+import { Button, Input } from '@/components/ui';
 
 const HouseIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +100,7 @@ export default function HomePage() {
 
       <form onSubmit={handleStart} className="w-full max-w-[340px] space-y-4">
         <div className="relative">
-          <input
+          <Input
             name="surname"
             type="text"
             value={surname}
@@ -108,9 +109,7 @@ export default function HomePage() {
             maxLength={4}
             required
             autoFocus
-            className="w-full bg-card border-2 border-sand rounded-xl px-4 py-3.5
-              text-base text-charcoal placeholder:text-muted/50
-              focus:outline-none focus:border-pine transition-colors"
+            className="bg-card"
           />
           {surname && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted/60 pointer-events-none">
@@ -128,17 +127,15 @@ export default function HomePage() {
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
           aria-disabled={!trimmedSurname}
-          className={`w-full py-4 rounded-xl text-base font-semibold transition-all duration-150
-            ${trimmedSurname
-              ? 'bg-pine text-cream shadow-sm hover:bg-pine-light active:scale-[0.98]'
-              : 'bg-sand text-muted'
-            }`}
+          disabled={!trimmedSurname}
+          fullWidth
+          size="lg"
         >
           开始建立我的家堂
-        </button>
+        </Button>
 
         {hasFamily ? (
           <Link

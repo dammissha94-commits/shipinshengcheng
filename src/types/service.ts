@@ -14,6 +14,7 @@ import type {
   InviteToken,
   LivingStatus,
   FamilyMeeting,
+  FamilyMeetingVote,
   FamilyOutput,
   FamilyOutputType,
   FamilyPhoto,
@@ -349,6 +350,37 @@ export interface CalendarEventWithOccurrence extends CalendarEventOccurrence {
   event: FamilyCalendarEvent;
 }
 
+export interface MeetingVoteOptionCount {
+  optionText: string;
+  count: number;
+}
+
+export interface MeetingVoteSummary {
+  meetingId: string;
+  totalVotes: number;
+  options: MeetingVoteOptionCount[];
+  currentUserHasVoted: boolean;
+  currentUserOption: string | null;
+}
+
+export interface FamilyMeetingDetail {
+  meeting: FamilyMeeting;
+  creatorDisplayName: string | null;
+  voteSummary: MeetingVoteSummary | null;
+}
+
+export interface FamilyMeetingPermission {
+  canEdit: boolean;
+  canClose: boolean;
+  canArchive: boolean;
+  canVote: boolean;
+}
+
+export interface SubmitMeetingVoteInput {
+  meetingId: string;
+  optionText: string;
+}
+
 export interface FamilyReminderSummary {
   todayCount: number;
   weekCount: number;
@@ -365,5 +397,6 @@ export interface UpcomingFamilyEventsResult {
 export type FamilyStoryItem = FamilyStory;
 export type FamilyPhotoItem = FamilyPhoto;
 export type FamilyMeetingItem = FamilyMeeting;
+export type FamilyMeetingVoteItem = FamilyMeetingVote;
 export type FamilyOutputItem = FamilyOutput;
 export type FamilyCalendarEventItem = FamilyCalendarEvent;

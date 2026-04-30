@@ -1,7 +1,23 @@
-import type { ActionLog, FamilyMeeting } from '@/types/domain';
-import type { CreateFamilyMeetingInput, UpdateFamilyMeetingInput } from '@/types/service';
+import type {
+  ActionLog,
+  FamilyMeeting,
+  FamilyMeetingVote,
+  Profile,
+} from '@/types/domain';
+import type {
+  CreateFamilyMeetingInput,
+  FamilyMeetingDetail,
+  FamilyMeetingPermission,
+  MeetingVoteSummary,
+  SubmitMeetingVoteInput,
+  UpdateFamilyMeetingInput,
+} from '@/types/service';
 import { getCurrentUser } from '@/lib/auth/auth-service';
-import { canCreateFamilyMeeting } from '@/lib/auth/permission-service';
+import {
+  canCreateFamilyMeeting,
+  isFamilyAdmin,
+  isFamilyMember,
+} from '@/lib/auth/permission-service';
 import { createSupabaseServiceClient, hasSupabaseConfig } from '@/lib/supabase/client';
 import type { SupabaseServiceClient } from './service-client';
 import { throwServiceError } from './service-client';
@@ -34,8 +50,25 @@ async function getMeeting(
   const result = await client.from<FamilyMeeting>('family_meetings').select('*').eq('id', meetingId);
   throwServiceError(result.error, 'get family meeting failed');
   const meeting = result.data?.[0];
-  if (!meeting) throw new Error('家族议事不存在');
+  if (!meeting) throw new Error('议事不存在或已不可访问');
   return meeting;
+}
+
+async function fetchProfile(
+  userId: string,
+  client: SupabaseServiceClient
+): Promise<Profile | null> {
+  const result = await client.from<Profile>('profiles').select('*').eq('id', userId);
+  if (result.error) return null;
+  return result.data?.[0] ?? null;
+}
+
+async function canManageThisMeeting(
+  meeting: FamilyMeeting,
+  userId: string
+): Promise<boolean> {
+  if (meeting.creator_user_id === userId) return true;
+  return isFamilyAdmin(meeting.family_id);
 }
 
 export async function listFamilyMeetings(
@@ -103,7 +136,8 @@ export async function updateFamilyMeeting(
   if (!user) throw new Error('请先登录');
 
   const existing = await getMeeting(meetingId, resolvedClient);
-  if (!(await canCreateFamilyMeeting(existing.family_id))) throw new Error('你暂无权限执行此操作');
+  if (existing.status === 'archived') throw new Error('已归档议事不可编辑');
+  if (!(await canManageThisMeeting(existing, user.id))) throw new Error('你暂无权限执行此操作');
 
   const result = await resolvedClient
     .from<FamilyMeeting>('family_meetings')
@@ -120,6 +154,16 @@ export async function updateFamilyMeeting(
     .single();
 
   throwServiceError(result.error, 'update family meeting failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: existing.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_meeting',
+    target_id: meetingId,
+    action_type: 'update_family_meeting',
+    metadata: { meeting_type: result.data!.meeting_type },
+  });
+
   return result.data!;
 }
 
@@ -132,7 +176,7 @@ export async function closeFamilyMeeting(
   if (!user) throw new Error('请先登录');
 
   const existing = await getMeeting(meetingId, resolvedClient);
-  if (!(await canCreateFamilyMeeting(existing.family_id))) throw new Error('你暂无权限执行此操作');
+  if (!(await canManageThisMeeting(existing, user.id))) throw new Error('你暂无权限执行此操作');
 
   const result = await resolvedClient
     .from<FamilyMeeting>('family_meetings')
@@ -153,4 +197,209 @@ export async function closeFamilyMeeting(
   });
 
   return result.data!;
+}
+
+export async function archiveFamilyMeeting(
+  meetingId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyMeeting> {
+  const resolvedClient = requireClient(client);
+  const user = await getCurrentUser();
+  if (!user) throw new Error('请先登录');
+
+  const existing = await getMeeting(meetingId, resolvedClient);
+  if (!(await canManageThisMeeting(existing, user.id))) throw new Error('你暂无权限执行此操作');
+
+  const result = await resolvedClient
+    .from<FamilyMeeting>('family_meetings')
+    .update({ status: 'archived' })
+    .eq('id', meetingId)
+    .select('*')
+    .single();
+
+  throwServiceError(result.error, 'archive family meeting failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: existing.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_meeting',
+    target_id: meetingId,
+    action_type: 'archive_family_meeting',
+    metadata: {},
+  });
+
+  return result.data!;
+}
+
+export async function listMeetingVotes(
+  meetingId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyMeetingVote[]> {
+  const resolvedClient = getClient(client);
+  if (!resolvedClient) return [];
+
+  const meeting = await getMeeting(meetingId, resolvedClient);
+  if (!(await isFamilyMember(meeting.family_id))) {
+    throw new Error('你暂无权限执行此操作');
+  }
+
+  const result = await resolvedClient
+    .from<FamilyMeetingVote>('family_meeting_votes')
+    .select('*')
+    .eq('meeting_id', meetingId)
+    .order('created_at', { ascending: true });
+
+  throwServiceError(result.error, 'list meeting votes failed');
+  return result.data ?? [];
+}
+
+export async function getMeetingVoteSummary(
+  meetingId: string,
+  client?: SupabaseServiceClient
+): Promise<MeetingVoteSummary> {
+  const resolvedClient = getClient(client);
+  if (!resolvedClient) {
+    return {
+      meetingId,
+      totalVotes: 0,
+      options: [],
+      currentUserHasVoted: false,
+      currentUserOption: null,
+    };
+  }
+
+  const votes = await listMeetingVotes(meetingId, resolvedClient);
+  const user = await getCurrentUser();
+
+  const counts = new Map<string, number>();
+  let currentUserOption: string | null = null;
+  for (const vote of votes) {
+    counts.set(vote.option_text, (counts.get(vote.option_text) ?? 0) + 1);
+    if (user && vote.voter_user_id === user.id) {
+      currentUserOption = vote.option_text;
+    }
+  }
+
+  const options = Array.from(counts.entries())
+    .map(([optionText, count]) => ({ optionText, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    meetingId,
+    totalVotes: votes.length,
+    options,
+    currentUserHasVoted: currentUserOption !== null,
+    currentUserOption,
+  };
+}
+
+export async function submitMeetingVote(
+  input: SubmitMeetingVoteInput,
+  client?: SupabaseServiceClient
+): Promise<FamilyMeetingVote> {
+  const resolvedClient = requireClient(client);
+  const user = await getCurrentUser();
+  if (!user) throw new Error('请先登录');
+
+  const optionText = input.optionText.trim();
+  if (!optionText) throw new Error('请选择投票选项');
+
+  const meeting = await getMeeting(input.meetingId, resolvedClient);
+  if (!(await isFamilyMember(meeting.family_id))) throw new Error('你暂无权限执行此操作');
+  if (meeting.meeting_type !== 'vote') throw new Error('当前议事不是投票议题');
+  if (meeting.status !== 'open') throw new Error('该投票议题已不可投票');
+
+  const existingVote = await resolvedClient
+    .from<FamilyMeetingVote>('family_meeting_votes')
+    .select('*')
+    .eq('meeting_id', meeting.id)
+    .eq('voter_user_id', user.id);
+  throwServiceError(existingVote.error, 'check existing vote failed');
+  if ((existingVote.data ?? []).length > 0) {
+    throw new Error('你已对该议题投过票，无法重复提交');
+  }
+
+  const result = await resolvedClient
+    .from<FamilyMeetingVote>('family_meeting_votes')
+    .insert({
+      meeting_id: meeting.id,
+      family_id: meeting.family_id,
+      voter_user_id: user.id,
+      option_text: optionText,
+    })
+    .select('*')
+    .single();
+
+  throwServiceError(result.error, 'submit meeting vote failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: meeting.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_meeting_vote',
+    target_id: result.data!.id,
+    action_type: 'submit_meeting_vote',
+    metadata: { meeting_id: meeting.id, option_text: optionText },
+  });
+
+  return result.data!;
+}
+
+export async function getFamilyMeeting(
+  meetingId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyMeetingDetail | null> {
+  const resolvedClient = getClient(client);
+  if (!resolvedClient) return null;
+
+  const result = await resolvedClient
+    .from<FamilyMeeting>('family_meetings')
+    .select('*')
+    .eq('id', meetingId);
+  throwServiceError(result.error, 'get family meeting failed');
+  const meeting = result.data?.[0];
+  if (!meeting) return null;
+
+  if (!(await isFamilyMember(meeting.family_id))) {
+    throw new Error('你暂无权限执行此操作');
+  }
+
+  let creatorDisplayName: string | null = null;
+  if (meeting.creator_user_id) {
+    const creator = await fetchProfile(meeting.creator_user_id, resolvedClient);
+    creatorDisplayName = creator?.display_name ?? null;
+  }
+
+  let voteSummary: MeetingVoteSummary | null = null;
+  if (meeting.meeting_type === 'vote') {
+    voteSummary = await getMeetingVoteSummary(meeting.id, resolvedClient);
+  }
+
+  return { meeting, creatorDisplayName, voteSummary };
+}
+
+export async function getMeetingPermission(
+  meeting: FamilyMeeting
+): Promise<FamilyMeetingPermission> {
+  const noop: FamilyMeetingPermission = {
+    canEdit: false,
+    canClose: false,
+    canArchive: false,
+    canVote: false,
+  };
+
+  const user = await getCurrentUser();
+  if (!user) return noop;
+
+  if (!(await isFamilyMember(meeting.family_id))) return noop;
+
+  const isManager = await canManageThisMeeting(meeting, user.id);
+  const writable = isManager && meeting.status !== 'archived';
+  const canVote = meeting.meeting_type === 'vote' && meeting.status === 'open';
+
+  return {
+    canEdit: writable,
+    canClose: isManager && meeting.status === 'open',
+    canArchive: isManager && meeting.status !== 'archived',
+    canVote,
+  };
 }

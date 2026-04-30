@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmail, signUpWithEmail } from '@/lib/auth/auth-service';
 import { sanitizeRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
+import { Button, Input } from '@/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -71,25 +72,23 @@ export default function LoginPage() {
 
           <label className="block">
             <span className="block text-sm font-medium text-charcoal mb-1.5">邮箱</span>
-            <input
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border-2 border-sand rounded-xl px-4 py-3 bg-cream focus:outline-none focus:border-pine"
               placeholder="name@example.com"
             />
           </label>
 
           <label className="block">
             <span className="block text-sm font-medium text-charcoal mb-1.5">密码</span>
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full border-2 border-sand rounded-xl px-4 py-3 bg-cream focus:outline-none focus:border-pine"
               placeholder="至少 6 位"
             />
           </label>
@@ -98,13 +97,14 @@ export default function LoginPage() {
             <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{message}</p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl bg-pine text-cream text-base font-semibold disabled:opacity-60"
+            fullWidth
+            size="lg"
           >
             {submitting ? '处理中…' : mode === 'signin' ? '登录' : '注册'}
-          </button>
+          </Button>
         </form>
       </div>
     </main>
