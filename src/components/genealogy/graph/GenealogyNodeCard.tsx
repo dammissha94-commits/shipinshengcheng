@@ -12,9 +12,9 @@ type GenealogyNodeData = GenealogyGraphNode & { [key: string]: unknown };
 
 function formatYearLabel(node: GenealogyGraphNode): string | null {
   if (!node.birthYear && !node.deathYear) return null;
-  if (node.birthYear && node.deathYear) return `${node.birthYear} – ${node.deathYear}`;
+  if (node.birthYear && node.deathYear) return `${node.birthYear} - ${node.deathYear}`;
   if (node.birthYear) return `${node.birthYear} 至今`;
-  return `？ – ${node.deathYear}`;
+  return `- ${node.deathYear}`;
 }
 
 function GenealogyNodeCardComponent({ data }: NodeProps) {
@@ -22,15 +22,19 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
   const isClaimed = node.claimStatus === 'claimed';
   const isDeceased = node.livingStatus === 'deceased';
   const yearLabel = formatYearLabel(node);
-  const initial = node.label.charAt(0) || '·';
+  const initial = node.label.charAt(0) || '家';
+  const highlightState = node.highlightState ?? 'normal';
 
   return (
     <div
       className={cn(
-        'relative w-[168px] rounded-2xl border bg-card px-3 py-2.5 shadow-sm transition-shadow',
+        'relative w-[168px] rounded-2xl border bg-card px-3 py-2.5 shadow-sm transition-all duration-200',
         'hover:shadow-md',
         isClaimed ? 'border-pine/40' : 'border-gold/40',
-        isDeceased && 'opacity-90'
+        isDeceased && 'opacity-90',
+        highlightState === 'selected' && 'scale-[1.04] border-pine bg-pine/5 shadow-lg shadow-pine/15',
+        highlightState === 'connected' && 'border-gold bg-gold/5 shadow-md',
+        highlightState === 'dimmed' && 'opacity-25'
       )}
     >
       <Handle
@@ -43,7 +47,9 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
         <div
           className={cn(
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-            isClaimed ? 'bg-pine text-cream' : 'bg-sand text-pine'
+            isClaimed ? 'bg-pine text-cream' : 'bg-sand text-pine',
+            highlightState === 'selected' && 'ring-2 ring-gold/70',
+            highlightState === 'connected' && 'ring-2 ring-gold/40'
           )}
         >
           {initial}
@@ -52,9 +58,7 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
           <p className="truncate text-sm font-semibold text-charcoal" title={node.label}>
             {node.label}
           </p>
-          {node.relationHint && (
-            <p className="mt-0.5 text-[11px] text-muted">{node.relationHint}</p>
-          )}
+          {node.relationHint && <p className="mt-0.5 text-[11px] text-muted">{node.relationHint}</p>}
         </div>
       </div>
 
@@ -79,12 +83,10 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
         >
           {node.livingStatusLabel}
         </span>
-        {yearLabel && (
-          <span className="rounded-full bg-cream px-2 py-0.5 text-muted">{yearLabel}</span>
-        )}
+        {yearLabel && <span className="rounded-full bg-cream px-2 py-0.5 text-muted">{yearLabel}</span>}
       </div>
 
-      <p className="mt-2 text-[10px] text-muted/80">点击查看档案</p>
+      <p className="mt-2 text-[10px] text-muted/80">点击高亮亲属关系</p>
 
       <Handle
         type="source"

@@ -11,12 +11,14 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from '@xyflow/react';
 import type { EdgeTypes, Node, NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Download, Loader2 } from 'lucide-react';
 import type { GenealogyGraphData } from '@/lib/genealogy/graph-types';
 import { layoutGenealogyGraph } from '@/lib/genealogy/graph-layout';
+import { buildHighlightState } from '@/lib/genealogy/graph-utils';
 import { cn } from '@/lib/utils';
 import { GenealogyNodeCard } from './GenealogyNodeCard';
 import { GenealogyEdge } from './GenealogyEdge';
@@ -25,6 +27,8 @@ import { useExportGenealogyImage } from './useExportGenealogyImage';
 interface GenealogyGraphProps {
   data: GenealogyGraphData;
   exportFileName: string;
+  selectedNodeId?: string | null;
+  fitViewSignal?: number;
   onSelectNode?: (nodeId: string) => void;
   className?: string;
 }
@@ -37,8 +41,17 @@ const edgeTypes: EdgeTypes = {
   genealogy: GenealogyEdge,
 };
 
-function GenealogyGraphInner({ data, exportFileName, onSelectNode, className }: GenealogyGraphProps) {
-  const layouted = useMemo(() => layoutGenealogyGraph(data, 'TB'), [data]);
+function GenealogyGraphInner({
+  data,
+  exportFileName,
+  selectedNodeId = null,
+  fitViewSignal = 0,
+  onSelectNode,
+  className,
+}: GenealogyGraphProps) {
+  const { fitView, setCenter } = useReactFlow();
+  const highlight = useMemo(() => buildHighlightState(selectedNodeId, data.edges), [selectedNodeId, data.edges]);
+  const layouted = useMemo(() => layoutGenealogyGraph(data, 'TB', highlight), [data, highlight]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layouted.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layouted.edges);
@@ -50,6 +63,18 @@ function GenealogyGraphInner({ data, exportFileName, onSelectNode, className }: 
   useEffect(() => {
     setEdges(layouted.edges);
   }, [layouted.edges, setEdges]);
+
+  useEffect(() => {
+    if (!selectedNodeId) return;
+    const node = layouted.nodes.find((item) => item.id === selectedNodeId);
+    if (!node) return;
+    setCenter(node.position.x + 84, node.position.y + 48, { duration: 420, zoom: 1.05 });
+  }, [layouted.nodes, selectedNodeId, setCenter]);
+
+  useEffect(() => {
+    if (fitViewSignal <= 0) return;
+    fitView({ padding: 0.25, duration: 420 });
+  }, [fitView, fitViewSignal]);
 
   const { exportImage, isExporting, errorMessage, resetError } = useExportGenealogyImage({
     fileName: exportFileName,
@@ -105,8 +130,8 @@ function GenealogyGraphInner({ data, exportFileName, onSelectNode, className }: 
 
       {errorMessage && (
         <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700 shadow-sm">
-          <button type="button" onClick={resetError} className="mr-2 text-red-700/70">
-            ×
+          <button type="button" onClick={resetError} className="mr-2 text-red-700/70" aria-label="关闭提示">
+            x
           </button>
           {errorMessage}
         </div>

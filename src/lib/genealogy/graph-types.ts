@@ -4,7 +4,11 @@ import type { ClaimStatus, Gender, LivingStatus, RelationType } from '@/types/do
 
 export type GenealogyClaimLabel = '已认领' | '待认领' | '有争议';
 export type GenealogyLivingLabel = '在世' | '已故' | '未知';
-export type GenealogyRelationLabel = '父母' | '子女' | '配偶' | '兄弟姐妹' | '祖辈';
+export type GenealogyRelationLabel = '父母关系' | '子女关系' | '配偶关系' | '兄弟姐妹关系' | '祖辈关系';
+export type GenealogyNodeHighlight = 'normal' | 'selected' | 'connected' | 'dimmed';
+export type GenealogyEdgeHighlight = 'normal' | 'connected' | 'dimmed';
+
+export type GraphRelationFilter = Record<RelationType, boolean>;
 
 export interface GenealogyGraphNode {
   id: string;
@@ -18,6 +22,7 @@ export interface GenealogyGraphNode {
   relationHint: string | null;
   birthYear: number | null;
   deathYear: number | null;
+  highlightState?: GenealogyNodeHighlight;
 }
 
 export interface GenealogyGraphEdge {
@@ -26,9 +31,22 @@ export interface GenealogyGraphEdge {
   target: string;
   relationType: RelationType;
   label: GenealogyRelationLabel;
+  highlightState?: GenealogyEdgeHighlight;
 }
 
 export interface GenealogyGraphData {
   nodes: GenealogyGraphNode[];
   edges: GenealogyGraphEdge[];
+}
+
+export interface GraphHighlightState {
+  selectedNodeId: string | null;
+  connectedNodeIds: string[];
+  connectedEdgeIds: string[];
+}
+
+export interface GraphSearchResult {
+  id: string;
+  label: string;
+  relationHint: string | null;
 }

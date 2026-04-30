@@ -23,11 +23,11 @@ const LIVING_LABELS: Record<LivingStatus, GenealogyLivingLabel> = {
 };
 
 const RELATION_LABELS: Record<RelationType, GenealogyRelationLabel> = {
-  parent_of: '父母',
-  child_of: '子女',
-  spouse_of: '配偶',
-  sibling_of: '兄弟姐妹',
-  grandparent_of: '祖辈',
+  parent_of: '父母关系',
+  child_of: '子女关系',
+  spouse_of: '配偶关系',
+  sibling_of: '兄弟姐妹关系',
+  grandparent_of: '祖辈关系',
 };
 
 function deriveGenerationLevels(
@@ -56,8 +56,6 @@ function deriveGenerationLevels(
       pushPair(childrenByParent, relation.to_person_id, relation.from_person_id);
       pushPair(parentsByChild, relation.from_person_id, relation.to_person_id);
     } else if (relation.relation_type === 'grandparent_of') {
-      // Bridge two generations: grandparent → child(unknown) → grandchild
-      // Use offset 2 implicitly via BFS: enqueue grandchild as +2 from grandparent.
       pushPair(childrenByParent, relation.from_person_id, `__grand__${relation.to_person_id}`);
     }
   }
@@ -90,7 +88,6 @@ function deriveGenerationLevels(
     });
   }
 
-  // Make sure every person has at least a level (defaults to 0)
   for (const id of personIds) {
     if (!levels.has(id)) levels.set(id, 0);
   }
@@ -139,6 +136,7 @@ export function buildGenealogyGraphData(
   for (const relation of relations) {
     if (relation.status !== 'active') continue;
     if (!personSet.has(relation.from_person_id) || !personSet.has(relation.to_person_id)) continue;
+
     const key = `${relation.relation_type}:${relation.from_person_id}->${relation.to_person_id}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -148,7 +146,7 @@ export function buildGenealogyGraphData(
       source: relation.from_person_id,
       target: relation.to_person_id,
       relationType: relation.relation_type,
-      label: RELATION_LABELS[relation.relation_type] ?? '父母',
+      label: RELATION_LABELS[relation.relation_type] ?? '父母关系',
     });
   }
 
