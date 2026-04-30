@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --pine: #1E3A2F;
+  --pine-light: #2A4E3E;
+  --cream: #F5F2EB;
+  --sand: #E2DDD4;
+  --gold: #9E8448;
+  --gold-light: #C4AA6A;
+  --charcoal: #1F1F1F;
+  --muted: #7A746E;
+  --card-bg: #FDFAF5;
+}
+
+@theme inline {
+  --color-pine: var(--pine);
+  --color-pine-light: var(--pine-light);
+  --color-cream: var(--cream);
+  --color-sand: var(--sand);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-charcoal: var(--charcoal);
+  --color-muted: var(--muted);
+  --color-card: var(--card-bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--cream);
+  color: var(--charcoal);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* Mobile safe-area bottom padding for pages with sticky buttons */
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}

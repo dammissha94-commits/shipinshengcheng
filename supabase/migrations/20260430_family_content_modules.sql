@@ -1,0 +1,4 @@
+-- Superseded by 20260430z_family_content_modules.sql.
+--
+-- This placeholder keeps the originally tracked migration name stable while
+-- allowing the compatibility migration to run after 20260430_family_life_cloud.sql.
