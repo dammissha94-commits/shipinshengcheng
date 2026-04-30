@@ -22,6 +22,9 @@ export type FamilyOutputType =
   | 'family_story_book'
   | 'family_yearbook';
 export type FamilyOutputStatus = 'draft' | 'preview_ready' | 'archived';
+export type CalendarEventType = 'birthday' | 'anniversary' | 'family_gathering' | 'family_task';
+export type CalendarEventStatus = 'active' | 'archived';
+export type CalendarRecurrence = 'none' | 'yearly' | 'monthly';
 export type FamilyRole = 'owner' | 'family_admin' | 'memory_admin' | 'member' | 'viewer';
 export type JoinStatus = 'pending' | 'active' | 'removed';
 export type FamilyType = 'small_family' | 'branch_family' | 'organization';
@@ -151,6 +154,25 @@ export interface FamilyOutput {
   updated_at: string;
 }
 
+export interface FamilyCalendarEvent {
+  id: string;
+  family_id: string;
+  creator_user_id: string | null;
+  related_person_id: string | null;
+  event_type: CalendarEventType;
+  title: string;
+  description: string | null;
+  event_date: string;
+  recurrence: CalendarRecurrence;
+  remind_d7: boolean;
+  remind_d1: boolean;
+  remind_day: boolean;
+  visibility: Visibility;
+  status: CalendarEventStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Person {
   id: string;
   familyId: string;
@@ -238,6 +260,7 @@ export interface FamilyMeetingVote {
 export type FamilyStoryRecord = FamilyStory;
 export type FamilyPhotoRecord = FamilyPhoto;
 export type FamilyMeetingRecord = FamilyMeeting;
+export type FamilyCalendarEventRecord = FamilyCalendarEvent;
 
 export function getRelationLabel(relation: Relation, gender?: Gender): string {
   switch (relation) {

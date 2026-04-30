@@ -1,5 +1,9 @@
 import type {
+  CalendarEventStatus,
+  CalendarEventType,
+  CalendarRecurrence,
   ClaimStatus,
+  FamilyCalendarEvent,
   FamilyMembership,
   FamilyRole,
   FamilySpace,
@@ -264,7 +268,36 @@ export interface UpdateFamilyOutputInput {
   status?: FamilyOutput['status'];
 }
 
+export interface CreateFamilyCalendarEventInput {
+  familyId: string;
+  eventType: CalendarEventType;
+  title: string;
+  description?: string | null;
+  eventDate: string;
+  recurrence?: CalendarRecurrence;
+  remindD7?: boolean;
+  remindD1?: boolean;
+  remindDay?: boolean;
+  relatedPersonId?: string | null;
+  visibility?: Visibility;
+}
+
+export interface UpdateFamilyCalendarEventInput {
+  eventType?: CalendarEventType;
+  title?: string;
+  description?: string | null;
+  eventDate?: string;
+  recurrence?: CalendarRecurrence;
+  remindD7?: boolean;
+  remindD1?: boolean;
+  remindDay?: boolean;
+  relatedPersonId?: string | null;
+  visibility?: Visibility;
+  status?: CalendarEventStatus;
+}
+
 export type FamilyStoryItem = FamilyStory;
 export type FamilyPhotoItem = FamilyPhoto;
 export type FamilyMeetingItem = FamilyMeeting;
 export type FamilyOutputItem = FamilyOutput;
+export type FamilyCalendarEventItem = FamilyCalendarEvent;

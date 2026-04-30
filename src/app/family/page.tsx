@@ -31,6 +31,7 @@ const lifeActions: ActionItem[] = [
   { label: '家族故事', description: '记录家族往事', href: '/family/stories', icon: <BookIcon /> },
   { label: '家族相册', description: '珍藏家族照片', href: '/family/photos', icon: <PhotoIcon /> },
   { label: '家族议事', description: '通知、聚会、投票', href: '/family/meetings', icon: <ChatIcon /> },
+  { label: '家族日历', description: '纪念日与提醒', href: '/family/calendar', icon: <CalendarIcon /> },
 ];
 
 const GRANDPARENT_RELS: Relation[] = [
@@ -53,6 +54,7 @@ function FileIcon() { return <IconBase><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0
 function BookIcon() { return <IconBase><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></IconBase>; }
 function PhotoIcon() { return <IconBase><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21,15 16,10 5,21" /></IconBase>; }
 function ChatIcon() { return <IconBase><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></IconBase>; }
+function CalendarIcon() { return <IconBase><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></IconBase>; }
 function GearIcon() { return <IconBase><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1 .6 1.8 1.8 0 0 0-.5 1.3V21a2 2 0 0 1-4 0v-.06A1.8 1.8 0 0 0 8 19.4a1.8 1.8 0 0 0-1.98.36l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.8 1.8 0 0 0 3.6 15a1.8 1.8 0 0 0-.6-1 1.8 1.8 0 0 0-1.3-.5H1.6a2 2 0 0 1 0-4h.06A1.8 1.8 0 0 0 3.6 8a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04A1.8 1.8 0 0 0 8 3.6a1.8 1.8 0 0 0 1-.6 1.8 1.8 0 0 0 .5-1.3V1.6a2 2 0 0 1 4 0v.06A1.8 1.8 0 0 0 15 3.6a1.8 1.8 0 0 0 1.98-.36l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 .6 1 1.8 1.8 0 0 0 1.3.5h.1a2 2 0 0 1 0 4h-.06A1.8 1.8 0 0 0 19.4 15Z" /></IconBase>; }
 
 function PersonDot({ relation, persons }: { relation: Relation; persons: ReturnType<typeof mapProfilesToTreePersons> }) {
