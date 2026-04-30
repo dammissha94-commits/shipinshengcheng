@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Plus, Settings, Users } from 'lucide-react';
+import { FileText, Network, Plus, Settings, Users } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
@@ -121,8 +121,12 @@ export default function TreePage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Link href="/family/members" className={cn(buttonVariants({ variant: 'primary' }), 'gap-2')}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Link href="/family/tree/graph" className={cn(buttonVariants({ variant: 'primary' }), 'gap-2')}>
+            <Network size={16} />
+            查看家族关系图
+          </Link>
+          <Link href="/family/members" className={cn(buttonVariants({ variant: 'secondary' }), 'gap-2')}>
             <Users size={16} />
             成员列表
           </Link>

@@ -87,3 +87,17 @@ supabase/migrations/
 - Push 推送
 
 统一使用“数字家堂、家族关系、家人档案、家族记忆、纪念日、家族日历、家庭节点、生日提醒、家庭聚会、家族故事、家族相册、家族议事、成果物、邀请认领”等表达。
+
+## 致谢与第三方代码
+
+本项目部分家族关系图可视化设计与实现思路参考 pure-genealogy。
+
+- Repository: https://github.com/yunfengsa/pure-genealogy
+- License: MIT
+
+完整的 MIT 许可证副本保留在 `LICENSES/pure-genealogy-LICENSE`。如对相关代码片段进行了改写或借鉴，会在文件头部以注释形式说明：
+
+```text
+Adapted from pure-genealogy under MIT License.
+```
+
