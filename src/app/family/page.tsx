@@ -29,6 +29,7 @@ const quickActions: ActionItem[] = [
   { label: '家人成员', description: '查看认领状态', href: '/family/members', icon: <PeopleIcon /> },
   { label: '查看三代谱', description: '家族关系结构图', href: '/family/tree', icon: <TreeIcon /> },
   { label: '家族关系图', description: '可视化亲属关系', href: '/family/tree/graph', icon: <GraphIcon /> },
+  { label: '家堂数据看板', description: '查看完整度与家族数据', href: '/family/statistics', icon: <ChartIcon /> },
   { label: '邀请认领', description: '生成邀请链接文案', href: '/family/invite', icon: <ShareIcon /> },
   { label: '家堂设置', description: '名称与权限', href: '/family/settings', icon: <GearIcon /> },
   { label: '成果物', description: '三代谱、记忆册', href: '/family/output', icon: <FileIcon /> },
@@ -57,6 +58,7 @@ function HeartIcon() { return <IconBase><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 
 function PersonIcon() { return <IconBase><circle cx="12" cy="8" r="4" /><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></IconBase>; }
 function TreeIcon() { return <IconBase><rect x="9" y="2" width="6" height="4" rx="1" /><rect x="2" y="18" width="6" height="4" rx="1" /><rect x="9" y="18" width="6" height="4" rx="1" /><rect x="16" y="18" width="6" height="4" rx="1" /><path d="M12 6v4M5 18v-4h14v4M12 10H5M12 10h7" /></IconBase>; }
 function GraphIcon() { return <IconBase><circle cx="6" cy="6" r="2.4" /><circle cx="18" cy="6" r="2.4" /><circle cx="12" cy="14" r="2.4" /><circle cx="6" cy="20" r="2.4" /><circle cx="18" cy="20" r="2.4" /><path d="M7.5 7.5l3.5 5M16.5 7.5l-3.5 5M10.6 15.6 7.4 18.4M13.4 15.6l3.2 2.8" /></IconBase>; }
+function ChartIcon() { return <IconBase><path d="M4 19V5" /><path d="M4 19h16" /><rect x="7" y="11" width="3" height="5" rx="1" /><rect x="12" y="7" width="3" height="9" rx="1" /><rect x="17" y="3" width="3" height="13" rx="1" /></IconBase>; }
 function ShareIcon() { return <IconBase><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></IconBase>; }
 function FileIcon() { return <IconBase><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14,2 14,8 20,8" /></IconBase>; }
 function BookIcon() { return <IconBase><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></IconBase>; }

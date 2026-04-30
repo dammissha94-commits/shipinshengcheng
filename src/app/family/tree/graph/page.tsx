@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Check, LocateFixed, Network, RotateCcw, Search, Users, X } from 'lucide-react';
+import { BarChart3, Check, LocateFixed, Network, RotateCcw, Search, Users, X } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { Card, buttonVariants } from '@/components/ui';
 import { getCurrentUser } from '@/lib/auth/auth-service';
@@ -188,7 +188,7 @@ export default function GenealogyGraphPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Link href="/family/tree" className={cn(buttonVariants({ variant: 'secondary' }), 'gap-2 text-xs')}>
             <Network size={14} />
             返回三代谱
@@ -196,6 +196,10 @@ export default function GenealogyGraphPage() {
           <Link href="/family/members" className={cn(buttonVariants({ variant: 'primary' }), 'gap-2 text-xs')}>
             <Users size={14} />
             成员列表
+          </Link>
+          <Link href="/family/statistics" className={cn(buttonVariants({ variant: 'gold' }), 'gap-2 text-xs')}>
+            <BarChart3 size={14} />
+            查看家堂数据
           </Link>
         </div>
 

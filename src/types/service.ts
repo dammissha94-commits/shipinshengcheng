@@ -426,6 +426,54 @@ export interface UpcomingFamilyEventsResult {
   events: FamilyReminderItem[];
 }
 
+export interface FamilyStatistics {
+  totalPersons: number;
+  claimedPersons: number;
+  unclaimedPersons: number;
+  alivePersons: number;
+  deceasedPersons: number;
+  unknownLivingPersons: number;
+  totalRelations: number;
+  parentRelations: number;
+  spouseRelations: number;
+  siblingRelations: number;
+  grandparentRelations: number;
+  totalStories: number;
+  totalPhotos: number;
+  totalMeetings: number;
+  openMeetings: number;
+  closedMeetings: number;
+  totalMeetingVotes: number;
+  totalMeetingOpinions: number;
+  totalCalendarEvents: number;
+  birthdayEvents: number;
+  upcomingEvents: number;
+  totalOutputs: number;
+}
+
+export interface FamilyCompletionScore {
+  score: number;
+  completedItems: string[];
+  missingItems: string[];
+  nextSuggestions: string[];
+}
+
+export interface RelationDistribution {
+  parent_of: number;
+  child_of: number;
+  spouse_of: number;
+  sibling_of: number;
+  grandparent_of: number;
+}
+
+export interface ContentDistribution {
+  stories: number;
+  photos: number;
+  meetings: number;
+  calendarEvents: number;
+  outputs: number;
+}
+
 export type FamilyStoryItem = FamilyStory;
 export type FamilyPhotoItem = FamilyPhoto;
 export type FamilyMeetingItem = FamilyMeeting;
