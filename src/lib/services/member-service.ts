@@ -3,6 +3,7 @@ import type {
   FamilyMemberStats,
   ListFamilyMembersFilter,
   PersonRelationSummary,
+  UpdatePersonBirthdateInput,
   UpdatePersonProfileInput,
 } from '@/types/service';
 import { getCurrentUser } from '@/lib/auth/auth-service';
@@ -125,6 +126,94 @@ export async function updatePersonProfile(
   });
 
   return result.data!;
+}
+
+function normalizeBirthdate(input: UpdatePersonBirthdateInput): Partial<PersonProfile> {
+  const birthYear = input.birthYear ?? null;
+  const birthMonth = input.birthMonth ?? null;
+  const birthDay = input.birthDay ?? null;
+
+  if (birthMonth !== null && (birthMonth < 1 || birthMonth > 12)) {
+    throw new Error('出生月份需填写 1-12');
+  }
+
+  if (birthDay !== null && (birthDay < 1 || birthDay > 31)) {
+    throw new Error('出生日期需填写 1-31');
+  }
+
+  const birthDatePrecision =
+    input.birthDatePrecision ??
+    (birthYear && birthMonth && birthDay
+      ? 'full_date'
+      : birthMonth && birthDay
+      ? 'month_day'
+      : birthYear
+      ? 'year_only'
+      : 'unknown');
+
+  return {
+    birth_year: birthYear,
+    birth_month: birthMonth,
+    birth_day: birthDay,
+    birth_date_precision: birthDatePrecision,
+  };
+}
+
+export async function updatePersonBirthdate(
+  personId: string,
+  input: UpdatePersonBirthdateInput,
+  client?: SupabaseServiceClient
+): Promise<PersonProfile> {
+  const resolvedClient = getClient(client);
+  const user = await getCurrentUser();
+  if (!resolvedClient) {
+    throw new Error('尚未配置 Supabase 环境变量，请先配置 .env.local');
+  }
+  if (!user) throw new Error('请先登录');
+
+  const existing = await getPersonProfile(personId, resolvedClient);
+  if (!existing) throw new Error('家人档案不存在');
+
+  const canManage = await canManageFamily(existing.family_id);
+  const isBoundUser = existing.bound_user_id === user.id;
+  if (!canManage && !isBoundUser) throw new Error('你暂无权限执行此操作');
+
+  const result = await resolvedClient
+    .from<PersonProfile>('person_profiles')
+    .update(normalizeBirthdate(input))
+    .eq('id', personId)
+    .select('*')
+    .single();
+
+  throwServiceError(result.error, 'update person birthdate failed');
+  await writeActionLog(resolvedClient, {
+    family_id: existing.family_id,
+    actor_user_id: user.id,
+    target_type: 'person_profile',
+    target_id: personId,
+    action_type: 'update_person_birthdate',
+    metadata: {},
+  });
+
+  return result.data!;
+}
+
+export function getPersonBirthdayLabel(person: PersonProfile): string {
+  if (person.birth_date_precision === 'unknown') return '未填写';
+  if (person.birth_date_precision === 'year_only') {
+    return person.birth_year ? `${person.birth_year}年` : '未填写';
+  }
+  if (person.birth_date_precision === 'month_day') {
+    return person.birth_month && person.birth_day
+      ? `${person.birth_month}月${person.birth_day}日`
+      : '未填写';
+  }
+  if (person.birth_date_precision === 'full_date') {
+    return person.birth_year && person.birth_month && person.birth_day
+      ? `${person.birth_year}年${person.birth_month}月${person.birth_day}日`
+      : '未填写';
+  }
+  return '未填写';
 }
 
 export async function getPersonRelationsForPerson(

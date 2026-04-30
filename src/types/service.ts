@@ -1,4 +1,5 @@
 import type {
+  BirthDatePrecision,
   CalendarEventStatus,
   CalendarEventType,
   CalendarRecurrence,
@@ -104,6 +105,17 @@ export interface UpdatePersonProfileInput {
   visibility?: Visibility;
   bio?: string | null;
   portraitUrl?: string | null;
+}
+
+export interface UpdatePersonBirthdateInput {
+  birthYear?: number | null;
+  birthMonth?: number | null;
+  birthDay?: number | null;
+  birthDatePrecision?: BirthDatePrecision;
+}
+
+export interface SyncPersonBirthdayEventInput {
+  personId: string;
 }
 
 export interface UpdateFamilySettingsInput {
@@ -280,6 +292,9 @@ export interface CreateFamilyCalendarEventInput {
   remindDay?: boolean;
   relatedPersonId?: string | null;
   visibility?: Visibility;
+  sourceType?: FamilyCalendarEvent['source_type'];
+  sourcePersonId?: string | null;
+  sourceKey?: string | null;
 }
 
 export interface UpdateFamilyCalendarEventInput {
@@ -294,6 +309,9 @@ export interface UpdateFamilyCalendarEventInput {
   relatedPersonId?: string | null;
   visibility?: Visibility;
   status?: CalendarEventStatus;
+  sourceType?: FamilyCalendarEvent['source_type'];
+  sourcePersonId?: string | null;
+  sourceKey?: string | null;
 }
 
 export type FamilyStoryItem = FamilyStory;

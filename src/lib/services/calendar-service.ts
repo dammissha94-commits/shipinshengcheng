@@ -1,4 +1,4 @@
-import type { ActionLog, FamilyCalendarEvent } from '@/types/domain';
+import type { ActionLog, FamilyCalendarEvent, PersonProfile } from '@/types/domain';
 import type {
   CreateFamilyCalendarEventInput,
   UpdateFamilyCalendarEventInput,
@@ -89,6 +89,9 @@ export async function createFamilyCalendarEvent(
       remind_day: input.remindDay ?? true,
       visibility: input.visibility ?? 'family',
       status: 'active',
+      source_type: input.sourceType ?? 'manual',
+      source_person_id: input.sourcePersonId ?? null,
+      source_key: input.sourceKey ?? null,
     })
     .select('*')
     .single();
@@ -134,12 +137,150 @@ export async function updateFamilyCalendarEvent(
       remind_day: input.remindDay,
       visibility: input.visibility,
       status: input.status,
+      source_type: input.sourceType,
+      source_person_id: input.sourcePersonId,
+      source_key: input.sourceKey,
     })
     .eq('id', eventId)
     .select('*')
     .single();
 
   throwServiceError(result.error, 'update family calendar event failed');
+  return result.data!;
+}
+
+async function getPersonProfile(
+  personId: string,
+  client: SupabaseServiceClient
+): Promise<PersonProfile> {
+  const result = await client.from<PersonProfile>('person_profiles').select('*').eq('id', personId);
+  throwServiceError(result.error, 'get birthday person profile failed');
+  const person = result.data?.[0];
+  if (!person) throw new Error('家人档案不存在');
+  return person;
+}
+
+async function getBirthdayEvent(
+  person: PersonProfile,
+  client: SupabaseServiceClient
+): Promise<FamilyCalendarEvent | null> {
+  const result = await client
+    .from<FamilyCalendarEvent>('family_calendar_events')
+    .select('*')
+    .eq('family_id', person.family_id)
+    .eq('source_type', 'person_birthday')
+    .eq('source_person_id', person.id)
+    .eq('source_key', 'birthday');
+
+  throwServiceError(result.error, 'get person birthday event failed');
+  return result.data?.[0] ?? null;
+}
+
+function nextBirthdayDate(month: number, day: number, birthYear: number | null): string {
+  const today = new Date();
+  let year = birthYear && birthYear > today.getFullYear() ? birthYear : today.getFullYear();
+  const candidate = new Date(year, month - 1, day);
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (candidate.getTime() < todayOnly.getTime()) year += 1;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export async function syncPersonBirthdayEvent(
+  personId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyCalendarEvent | null> {
+  const resolvedClient = requireClient(client);
+  const user = await getCurrentUser();
+  if (!user) throw new Error('请先登录');
+
+  const person = await getPersonProfile(personId, resolvedClient);
+  if (!(await isFamilyMember(person.family_id))) throw new Error('你暂无权限执行此操作');
+
+  if (!person.birth_month || !person.birth_day) {
+    await unsyncPersonBirthdayEvent(personId, resolvedClient);
+    return null;
+  }
+
+  const existing = await getBirthdayEvent(person, resolvedClient);
+  const eventDate = nextBirthdayDate(person.birth_month, person.birth_day, person.birth_year);
+  const title = `${person.display_name}生日`;
+  const eventValues: Partial<FamilyCalendarEvent> = {
+    family_id: person.family_id,
+    creator_user_id: user.id,
+    related_person_id: person.id,
+    event_type: 'birthday',
+    title,
+    description: '由家人档案生日信息自动同步',
+    event_date: eventDate,
+    recurrence: 'yearly',
+    remind_d7: true,
+    remind_d1: true,
+    remind_day: true,
+    visibility: 'family',
+    status: 'active',
+    source_type: 'person_birthday',
+    source_person_id: person.id,
+    source_key: 'birthday',
+  };
+
+  const result = existing
+    ? await resolvedClient
+        .from<FamilyCalendarEvent>('family_calendar_events')
+        .update(eventValues)
+        .eq('id', existing.id)
+        .select('*')
+        .single()
+    : await resolvedClient
+        .from<FamilyCalendarEvent>('family_calendar_events')
+        .insert(eventValues)
+        .select('*')
+        .single();
+
+  throwServiceError(result.error, 'sync person birthday event failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: person.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_calendar_event',
+    target_id: result.data!.id,
+    action_type: existing ? 'update_person_birthday_event' : 'create_person_birthday_event',
+    metadata: { person_id: person.id },
+  });
+
+  return result.data!;
+}
+
+export async function unsyncPersonBirthdayEvent(
+  personId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyCalendarEvent | null> {
+  const resolvedClient = requireClient(client);
+  const user = await getCurrentUser();
+  if (!user) throw new Error('请先登录');
+
+  const person = await getPersonProfile(personId, resolvedClient);
+  if (!(await isFamilyMember(person.family_id))) throw new Error('你暂无权限执行此操作');
+  const existing = await getBirthdayEvent(person, resolvedClient);
+  if (!existing || existing.status === 'archived') return existing;
+
+  const result = await resolvedClient
+    .from<FamilyCalendarEvent>('family_calendar_events')
+    .update({ status: 'archived' })
+    .eq('id', existing.id)
+    .select('*')
+    .single();
+
+  throwServiceError(result.error, 'unsync person birthday event failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: person.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_calendar_event',
+    target_id: existing.id,
+    action_type: 'archive_person_birthday_event',
+    metadata: { person_id: person.id },
+  });
+
   return result.data!;
 }
 

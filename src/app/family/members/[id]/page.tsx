@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import type { FamilySpace, Gender, LivingStatus, PersonProfile, Visibility } from '@/types/domain';
+import type {
+  BirthDatePrecision,
+  FamilySpace,
+  Gender,
+  LivingStatus,
+  PersonProfile,
+  Visibility,
+} from '@/types/domain';
 import type { PersonRelationSummary } from '@/types/service';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
@@ -11,10 +18,16 @@ import { canManageFamily } from '@/lib/auth/permission-service';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import {
+  getPersonBirthdayLabel,
   getPersonProfile,
   getPersonRelationSummaries,
+  updatePersonBirthdate,
   updatePersonProfile,
 } from '@/lib/services/member-service';
+import {
+  syncPersonBirthdayEvent,
+  unsyncPersonBirthdayEvent,
+} from '@/lib/services/calendar-service';
 import AppHeader from '@/components/AppHeader';
 
 const CLAIM_LABELS = {
@@ -53,12 +66,16 @@ export default function MemberDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [form, setForm] = useState({
     surname: '',
     givenName: '',
     displayName: '',
     gender: 'unknown' as Gender,
     birthYear: '',
+    birthMonth: '',
+    birthDay: '',
+    birthDatePrecision: 'year_only' as BirthDatePrecision,
     deathYear: '',
     livingStatus: 'alive' as LivingStatus,
     visibility: 'family' as Visibility,
@@ -112,6 +129,9 @@ export default function MemberDetailPage() {
           displayName: profile.display_name,
           gender: profile.gender ?? 'unknown',
           birthYear: profile.birth_year ? String(profile.birth_year) : '',
+          birthMonth: profile.birth_month ? String(profile.birth_month) : '',
+          birthDay: profile.birth_day ? String(profile.birth_day) : '',
+          birthDatePrecision: profile.birth_date_precision ?? 'year_only',
           deathYear: profile.death_year ? String(profile.death_year) : '',
           livingStatus: profile.living_status,
           visibility: profile.visibility,
@@ -135,6 +155,7 @@ export default function MemberDetailPage() {
     try {
       setSaving(true);
       setError('');
+      setNotice('');
       const updated = await updatePersonProfile(person.id, {
         surname: form.surname || null,
         givenName: form.givenName || null,
@@ -147,7 +168,23 @@ export default function MemberDetailPage() {
         bio: form.bio || null,
         portraitUrl: form.portraitUrl || null,
       });
-      setPerson(updated);
+
+      const birthdateUpdated = await updatePersonBirthdate(person.id, {
+        birthYear: form.birthYear ? parseInt(form.birthYear, 10) : null,
+        birthMonth: form.birthMonth ? parseInt(form.birthMonth, 10) : null,
+        birthDay: form.birthDay ? parseInt(form.birthDay, 10) : null,
+        birthDatePrecision: form.birthDatePrecision,
+      });
+
+      if (birthdateUpdated.birth_month && birthdateUpdated.birth_day) {
+        await syncPersonBirthdayEvent(person.id);
+        setNotice('生日提醒已同步到家族日历');
+      } else {
+        await unsyncPersonBirthdayEvent(person.id);
+        setNotice('生日提醒已从家族日历归档');
+      }
+
+      setPerson({ ...updated, ...birthdateUpdated });
       setEditing(false);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : '保存失败');
@@ -196,6 +233,7 @@ export default function MemberDetailPage() {
         </div>
 
         {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-4">{error}</p>}
+        {notice && <p className="text-sm text-pine bg-gold/10 border border-gold/30 rounded-xl px-3 py-2 mb-4">{notice}</p>}
 
         {editing ? (
           <form onSubmit={handleSave} className="bg-card rounded-2xl border border-sand/60 shadow-sm p-4 space-y-3">
@@ -241,6 +279,24 @@ export default function MemberDetailPage() {
 
             {(canManage || canEditSelf) && (
               <>
+                <div className="rounded-2xl border border-sand/70 bg-cream/70 p-3 space-y-3">
+                  <p className="text-sm font-semibold text-pine">生日提醒</p>
+                  <Field label="出生年份" type="number" value={form.birthYear} onChange={(value) => setForm({ ...form, birthYear: value })} />
+                  <Field label="出生月份" type="number" value={form.birthMonth} onChange={(value) => setForm({ ...form, birthMonth: value })} />
+                  <Field label="出生日期" type="number" value={form.birthDay} onChange={(value) => setForm({ ...form, birthDay: value })} />
+                  <SelectField
+                    label="日期精确度"
+                    value={form.birthDatePrecision}
+                    onChange={(value) => setForm({ ...form, birthDatePrecision: value as BirthDatePrecision })}
+                    options={[
+                      ['unknown', '未填写'],
+                      ['year_only', '仅年份'],
+                      ['month_day', '月日'],
+                      ['full_date', '完整日期'],
+                    ]}
+                  />
+                  <p className="text-xs text-muted">填写出生月份和出生日期后，会同步到家族日历。</p>
+                </div>
                 <Field label="头像占位链接" value={form.portraitUrl} onChange={(value) => setForm({ ...form, portraitUrl: value })} />
                 <label className="block">
                   <span className="block text-sm text-charcoal font-medium mb-1.5">家人简介</span>
@@ -264,6 +320,19 @@ export default function MemberDetailPage() {
         ) : (
           <div className="space-y-4">
             <InfoGrid person={person} />
+            <Section title="生日提醒">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-charcoal">{getPersonBirthdayLabel(person)}</p>
+                  <p className="text-xs text-muted mt-1">
+                    {person.birth_month && person.birth_day ? '已具备同步到家族日历的生日信息' : '填写出生月份和出生日期后可生成生日提醒'}
+                  </p>
+                </div>
+                <Link href="/family/calendar" className="shrink-0 rounded-full bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold">
+                  家族日历
+                </Link>
+              </div>
+            </Section>
             <Section title="家人简介">
               <p className="text-sm text-muted leading-relaxed">{person.bio || '暂无简介'}</p>
               <p className="text-xs text-muted/70 mt-2">
@@ -318,7 +387,7 @@ function InfoGrid({ person }: { person: PersonProfile }) {
     ['姓氏', person.surname || '未填写'],
     ['名字', person.given_name || '未填写'],
     ['性别', GENDER_LABELS[person.gender ?? 'unknown']],
-    ['出生年份', person.birth_year ? String(person.birth_year) : '未填写'],
+    ['生日信息', getPersonBirthdayLabel(person)],
     ['去世年份', person.death_year ? String(person.death_year) : '无'],
     ['在世状态', LIVING_LABELS[person.living_status]],
     ['认领状态', CLAIM_LABELS[person.claim_status]],

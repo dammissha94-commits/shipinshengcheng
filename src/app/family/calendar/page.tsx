@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
@@ -11,11 +12,13 @@ import {
   createFamilyCalendarEvent,
   listFamilyCalendarEvents,
 } from '@/lib/services/calendar-service';
+import { listFamilyMembers } from '@/lib/services/member-service';
 import type {
   CalendarEventType,
   CalendarRecurrence,
   FamilyCalendarEvent,
   FamilySpace,
+  PersonProfile,
   Visibility,
 } from '@/types/domain';
 import AppHeader from '@/components/AppHeader';
@@ -109,6 +112,7 @@ export default function FamilyCalendarPage() {
   const router = useRouter();
   const [family, setFamily] = useState<FamilySpace | null>(null);
   const [events, setEvents] = useState<FamilyCalendarEvent[]>([]);
+  const [people, setPeople] = useState<PersonProfile[]>([]);
   const [filter, setFilter] = useState<CalendarEventType | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -153,9 +157,13 @@ export default function FamilyCalendarPage() {
           return;
         }
 
-        const records = await listFamilyCalendarEvents(currentFamily.id);
+        const [records, familyPeople] = await Promise.all([
+          listFamilyCalendarEvents(currentFamily.id),
+          listFamilyMembers(currentFamily.id),
+        ]);
         setFamily(currentFamily);
         setEvents(records);
+        setPeople(familyPeople);
       } catch (loadError) {
         setError(sanitizeError(loadError, '加载家族日历失败'));
       } finally {
@@ -340,6 +348,7 @@ export default function FamilyCalendarPage() {
                 <CalendarEventCard
                   key={event.id}
                   event={event}
+                  relatedPerson={people.find((person) => person.id === event.source_person_id) ?? null}
                   archiving={archivingId === event.id}
                   onArchive={() => handleArchive(event.id)}
                 />
@@ -361,10 +370,12 @@ export default function FamilyCalendarPage() {
 
 function CalendarEventCard({
   event,
+  relatedPerson,
   archiving,
   onArchive,
 }: {
   event: FamilyCalendarEvent;
+  relatedPerson: PersonProfile | null;
   archiving: boolean;
   onArchive: () => void;
 }) {
@@ -381,6 +392,21 @@ function CalendarEventCard({
           {EVENT_TYPE_LABELS[event.event_type]}
         </span>
       </div>
+      {event.source_type === 'person_birthday' && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
+            自动生日提醒
+          </span>
+          {relatedPerson && (
+            <>
+              <span className="text-xs text-muted">关联：{relatedPerson.display_name}</span>
+              <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-pine">
+                查看家人档案
+              </Link>
+            </>
+          )}
+        </div>
+      )}
       {event.description && <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-muted">{event.description}</p>}
       <div className="flex items-center justify-between gap-3 border-t border-sand/60 pt-3 text-xs text-muted">
         <span>提醒：{reminderText(event)}</span>

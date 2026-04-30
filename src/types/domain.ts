@@ -25,6 +25,8 @@ export type FamilyOutputStatus = 'draft' | 'preview_ready' | 'archived';
 export type CalendarEventType = 'birthday' | 'anniversary' | 'family_gathering' | 'family_task';
 export type CalendarEventStatus = 'active' | 'archived';
 export type CalendarRecurrence = 'none' | 'yearly' | 'monthly';
+export type BirthDatePrecision = 'unknown' | 'year_only' | 'month_day' | 'full_date';
+export type CalendarEventSourceType = 'manual' | 'person_birthday' | 'family_custom';
 export type FamilyRole = 'owner' | 'family_admin' | 'memory_admin' | 'member' | 'viewer';
 export type JoinStatus = 'pending' | 'active' | 'removed';
 export type FamilyType = 'small_family' | 'branch_family' | 'organization';
@@ -89,6 +91,9 @@ export interface PersonProfile {
   display_name: string;
   gender: Gender | null;
   birth_year: number | null;
+  birth_month: number | null;
+  birth_day: number | null;
+  birth_date_precision: BirthDatePrecision;
   death_year: number | null;
   living_status: LivingStatus;
   claim_status: ClaimStatus;
@@ -169,6 +174,9 @@ export interface FamilyCalendarEvent {
   remind_day: boolean;
   visibility: Visibility;
   status: CalendarEventStatus;
+  source_type: CalendarEventSourceType;
+  source_person_id: string | null;
+  source_key: string | null;
   created_at: string;
   updated_at: string;
 }
