@@ -1,45 +1,41 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { MessageSquarePlus } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { getUserFamilyRole } from '@/lib/auth/permission-service';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import { createFamilyMeeting, listFamilyMeetings } from '@/lib/services/meeting-service';
-import type { FamilyMeeting, FamilySpace, FamilyRole, MeetingType, Visibility } from '@/types/domain';
+import type { FamilyMeeting, FamilyRole, FamilySpace, MeetingType, Visibility } from '@/types/domain';
 import AppHeader from '@/components/AppHeader';
 import SectionTitle from '@/components/SectionTitle';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
+const NO_PERMISSION_MESSAGE = '你暂无权限执行此操作';
 
 const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
   notice: '通知',
   vote: '投票',
-  event: '聚会',
+  event: '家庭聚会',
   memorial_day: '纪念日',
-};
-
-const MEETING_TYPE_COLORS: Record<MeetingType, string> = {
-  notice: 'bg-pine/10 text-pine',
-  vote: 'bg-gold/15 text-gold',
-  event: 'bg-emerald-50 text-emerald-700',
-  memorial_day: 'bg-amber-50 text-amber-700',
 };
 
 const TYPE_FILTERS: { value: MeetingType | 'all'; label: string }[] = [
   { value: 'all', label: '全部' },
   { value: 'notice', label: '通知' },
   { value: 'vote', label: '投票' },
-  { value: 'event', label: '聚会' },
+  { value: 'event', label: '家庭聚会' },
   { value: 'memorial_day', label: '纪念日' },
 ];
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: 'family', label: '家族可见' },
-  { value: 'private', label: '仅自己' },
-  { value: 'public', label: '公开' },
+  { value: 'family', label: '家庭内可见' },
+  { value: 'private', label: '仅自己可见' },
+  { value: 'public', label: '公开可见' },
 ];
 
 function canCreate(role: FamilyRole | null): boolean {
@@ -55,22 +51,42 @@ function formatDate(value: string | null): string {
   });
 }
 
-function MeetingCard({ meeting }: { meeting: FamilyMeeting }) {
-  const typeColor = MEETING_TYPE_COLORS[meeting.meeting_type] ?? 'bg-sand text-muted';
-  const statusLabel = meeting.status === 'open' ? '进行中' : meeting.status === 'closed' ? '已关闭' : '已归档';
+function sanitizeError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : fallback;
+  if (message.includes('Auth session missing')) return '请先登录';
+  if (message.includes('failed') || message.includes('violates') || message.includes('permission denied')) {
+    return fallback;
+  }
+  return message;
+}
 
+function meetingStatusLabel(status: FamilyMeeting['status']): string {
+  if (status === 'open') return '进行中';
+  if (status === 'closed') return '已关闭';
+  return '已归档';
+}
+
+function MeetingCard({ meeting }: { meeting: FamilyMeeting }) {
   return (
     <article className="rounded-2xl border border-sand/70 bg-card p-4 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-3">
-        <h3 className="min-w-0 flex-1 text-base font-semibold leading-snug text-charcoal">{meeting.title}</h3>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${typeColor}`}>
+        <h3 className="min-w-0 flex-1 text-base font-semibold text-charcoal">{meeting.title}</h3>
+        <span className="rounded-full bg-pine/10 px-2.5 py-1 text-xs font-medium text-pine">
           {MEETING_TYPE_LABELS[meeting.meeting_type]}
         </span>
       </div>
-      <p className="line-clamp-3 text-sm leading-relaxed text-muted">{meeting.content?.trim() || '暂无内容'}</p>
-      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted/70">
+      <p className="line-clamp-3 text-sm text-muted">{meeting.content?.trim() || '暂无内容'}</p>
+      <div className="mt-3 flex items-center justify-between text-xs text-muted/80">
         <span>{formatDate(meeting.event_date)}</span>
-        <span className={meeting.status === 'open' ? 'text-pine' : 'text-muted'}>{statusLabel}</span>
+        <span>{meetingStatusLabel(meeting.status)}</span>
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs text-muted">
+          {meeting.meeting_type === 'vote' ? '含投票面板与议事意见区' : '含议事意见区'}
+        </span>
+        <Link href={`/family/meetings/${meeting.id}`} className="text-xs font-semibold text-pine">
+          查看详情
+        </Link>
       </div>
     </article>
   );
@@ -101,20 +117,17 @@ export default function MeetingsPage() {
         setLoading(false);
         return;
       }
-
       try {
         const user = await getCurrentUser();
         if (!user) {
           router.replace(currentLoginRedirectPath());
           return;
         }
-
         const currentFamily = await getCurrentFamilySpace(undefined, user);
         if (!currentFamily) {
           router.replace('/create');
           return;
         }
-
         const [records, currentRole] = await Promise.all([
           listFamilyMeetings(currentFamily.id),
           getUserFamilyRole(currentFamily.id),
@@ -122,13 +135,12 @@ export default function MeetingsPage() {
         setFamily(currentFamily);
         setMeetings(records);
         setRole(currentRole);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : '加载家族议事失败');
+      } catch (err) {
+        setError(sanitizeError(err, '加载家族议事失败'));
       } finally {
         setLoading(false);
       }
     }
-
     load();
   }, [router]);
 
@@ -141,16 +153,14 @@ export default function MeetingsPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!family || !form.title.trim()) return;
-
     if (!canCreateMeeting) {
-      setError('你暂无权限执行此操作');
+      setError(NO_PERMISSION_MESSAGE);
       return;
     }
-
     try {
       setSubmitting(true);
       setError('');
-      const meeting = await createFamilyMeeting({
+      const created = await createFamilyMeeting({
         familyId: family.id,
         meetingType: form.meetingType,
         title: form.title.trim(),
@@ -158,24 +168,38 @@ export default function MeetingsPage() {
         eventDate: form.eventDate || null,
         visibility: form.visibility,
       });
-      setMeetings((current) => [meeting, ...current]);
+      setMeetings((current) => [created, ...current]);
       setForm({ meetingType: 'notice', title: '', content: '', eventDate: '', visibility: 'family' });
       setShowForm(false);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : '发布议题失败');
+    } catch (err) {
+      setError(sanitizeError(err, '发布议题失败'));
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (loading) return <CenteredText text="加载中..." />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <p className="text-sm text-muted">加载中...</p>
+      </div>
+    );
+  }
 
   if (!hasSupabaseConfig()) {
-    return <Shell rightElement={null}><CenteredPanel text={SUPABASE_FALLBACK_MESSAGE} /></Shell>;
+    return (
+      <Shell rightElement={null}>
+        <CenteredPanel text={SUPABASE_FALLBACK_MESSAGE} />
+      </Shell>
+    );
   }
 
   if (error && !family) {
-    return <Shell rightElement={null}><CenteredPanel text={error} /></Shell>;
+    return (
+      <Shell rightElement={null}>
+        <CenteredPanel text={error} />
+      </Shell>
+    );
   }
 
   return (
@@ -184,27 +208,27 @@ export default function MeetingsPage() {
         canCreateMeeting ? (
           <button
             type="button"
-            onClick={() => setShowForm((value) => !value)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-pine transition-colors hover:bg-sand"
+            onClick={() => setShowForm((v) => !v)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-pine hover:bg-sand"
             aria-label="新增议题"
           >
-            <PlusIcon />
+            <MessageSquarePlus size={17} />
           </button>
         ) : null
       }
     >
       <main className="mx-auto max-w-md px-4 py-6">
         <div className="mb-5 rounded-2xl bg-pine p-5 text-cream">
-          <p className="mb-1 text-xs tracking-wider text-cream/60">家族议事</p>
+          <p className="mb-1 text-xs text-cream/70">家族议事</p>
           <h1 className="text-xl font-bold">{family?.displayName}</h1>
-          <p className="mt-1 text-sm text-cream/70">{meetings.length} 条议题</p>
+          <p className="mt-1 text-sm text-cream/80">{meetings.length} 条议题</p>
         </div>
 
         {error && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
         {!canCreateMeeting && (
           <p className="mb-4 rounded-xl border border-sand/70 bg-card px-3 py-2 text-xs text-muted">
-            普通成员可查看家族议事，新增和关闭议题由家堂管理员处理。
+            你可以查看议题并在详情页发表议事意见；新增和管理议题由家堂管理员处理。
           </p>
         )}
 
@@ -219,7 +243,9 @@ export default function MeetingsPage() {
                 className="w-full rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
               >
                 {TYPE_FILTERS.filter((item) => item.value !== 'all').map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -233,20 +259,42 @@ export default function MeetingsPage() {
                 className="w-full resize-none rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
               />
             </label>
-            <Field label="日期" type="date" value={form.eventDate} onChange={(value) => setForm({ ...form, eventDate: value })} />
-            <VisibilitySelect value={form.visibility} onChange={(value) => setForm({ ...form, visibility: value })} />
-            <FormActions submitting={submitting} disabled={!form.title.trim()} onCancel={() => setShowForm(false)} />
+            <Field
+              label="日期"
+              type="date"
+              value={form.eventDate}
+              onChange={(value) => setForm({ ...form, eventDate: value })}
+            />
+            <VisibilitySelect
+              value={form.visibility}
+              onChange={(value) => setForm({ ...form, visibility: value })}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="flex-1 rounded-xl border-2 border-sand py-2.5 text-sm font-medium text-muted"
+              >
+                取消
+              </button>
+              <button
+                disabled={!form.title.trim() || submitting}
+                className="flex-1 rounded-xl bg-pine py-2.5 text-sm font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? '发布中...' : '发布'}
+              </button>
+            </div>
           </form>
         )}
 
-        <SectionTitle title="议题列表" subtitle="家族通知、家庭事项、聚会安排与纪念日提醒" />
+        <SectionTitle title="议题列表" subtitle="通知、投票、家庭聚会与纪念日议题" />
         <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
           {TYPE_FILTERS.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => setFilter(item.value)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium ${
                 filter === item.value ? 'bg-pine text-cream' : 'border border-sand bg-card text-muted'
               }`}
             >
@@ -261,7 +309,9 @@ export default function MeetingsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredMeetings.map((meeting) => <MeetingCard key={meeting.id} meeting={meeting} />)}
+            {filteredMeetings.map((meeting) => (
+              <MeetingCard key={meeting.id} meeting={meeting} />
+            ))}
           </div>
         )}
       </main>
@@ -274,14 +324,6 @@ function Shell({ children, rightElement }: { children: React.ReactNode; rightEle
     <div className="min-h-screen bg-cream">
       <AppHeader title="家族议事" backHref="/family" rightElement={rightElement} />
       {children}
-    </div>
-  );
-}
-
-function CenteredText({ text }: { text: string }) {
-  return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-4 text-center">
-      <p className="text-sm text-muted">{text}</p>
     </div>
   );
 }
@@ -331,39 +373,11 @@ function VisibilitySelect({ value, onChange }: { value: Visibility; onChange: (v
         className="w-full rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
       >
         {VISIBILITY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
         ))}
       </select>
     </label>
-  );
-}
-
-function FormActions({
-  submitting,
-  disabled,
-  onCancel,
-}: {
-  submitting: boolean;
-  disabled: boolean;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="flex gap-2">
-      <button type="button" onClick={onCancel} className="flex-1 rounded-xl border-2 border-sand py-2.5 text-sm font-medium text-muted">
-        取消
-      </button>
-      <button disabled={disabled || submitting} className="flex-1 rounded-xl bg-pine py-2.5 text-sm font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-50">
-        {submitting ? '发布中...' : '发布'}
-      </button>
-    </div>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
   );
 }

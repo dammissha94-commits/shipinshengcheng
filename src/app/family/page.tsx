@@ -15,7 +15,7 @@ import {
 } from '@/lib/services/calendar-service';
 import { listFamilyPersons, listPersonRelations } from '@/lib/services/person-service';
 import { mapProfilesToTreePersons } from '@/lib/family-view';
-import { calcCompletion } from '@/lib/storage';
+import { calcCompletion } from '@/lib/family-completion';
 import ProgressCard from '@/components/ProgressCard';
 import SectionTitle from '@/components/SectionTitle';
 import ActionGrid from '@/components/ActionGrid';

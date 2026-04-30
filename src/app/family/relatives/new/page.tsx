@@ -1,7 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Link2 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { canManageFamily } from '@/lib/auth/permission-service';
@@ -17,8 +19,10 @@ import { getSelfProfile, mapProfilesToTreePersons } from '@/lib/family-view';
 import type { FamilySpace, Gender, PersonProfile, Relation, RelationType } from '@/types/domain';
 import { RELATION_OPTIONS } from '@/types/domain';
 import AppHeader from '@/components/AppHeader';
+import { Button, Card, Input, PageShell } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
-const YEARS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i - 5);
+const YEARS = Array.from({ length: 100 }, (_, index) => new Date().getFullYear() - index - 5);
 
 function NewRelativeForm() {
   const router = useRouter();
@@ -26,15 +30,13 @@ function NewRelativeForm() {
   const [family, setFamily] = useState<FamilySpace | null>(null);
   const [selfProfile, setSelfProfile] = useState<PersonProfile | null>(null);
   const [existingPersons, setExistingPersons] = useState<ReturnType<typeof mapProfilesToTreePersons>>([]);
-
   const [relation, setRelation] = useState<Relation>(() => {
     const rel = searchParams.get('relation') as Relation | null;
-    return rel && RELATION_OPTIONS.some((o) => o.value === rel) ? rel : 'father';
+    return rel && RELATION_OPTIONS.some((option) => option.value === rel) ? rel : 'father';
   });
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [birthYear, setBirthYear] = useState('');
-  const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -54,16 +56,18 @@ function NewRelativeForm() {
           router.replace(currentLoginRedirectPath());
           return;
         }
+
         const currentFamily = await getCurrentFamilySpace(undefined, user);
         if (!currentFamily) {
           router.replace('/create');
           return;
         }
-        const [profiles, relations] = await Promise.all([
+
+        const [profiles, relations, allowed] = await Promise.all([
           listFamilyPersons(currentFamily.id),
           listPersonRelations(currentFamily.id),
+          canManageFamily(currentFamily.id),
         ]);
-        const allowed = await canManageFamily(currentFamily.id);
         setFamily(currentFamily);
         setSelfProfile(getSelfProfile(profiles, user.id));
         setExistingPersons(mapProfilesToTreePersons(profiles, relations, user.id));
@@ -78,7 +82,7 @@ function NewRelativeForm() {
     loadContext();
   }, [router]);
 
-  const selectedLabel = RELATION_OPTIONS.find((o) => o.value === relation)?.label ?? '';
+  const selectedLabel = RELATION_OPTIONS.find((option) => option.value === relation)?.label ?? '';
   const canSubmit = name.trim().length > 0 && family !== null && selfProfile !== null;
 
   function getRelationInput(newPersonId: string): {
@@ -86,9 +90,7 @@ function NewRelativeForm() {
     toPersonId: string;
     relationType: RelationType;
   } {
-    if (!selfProfile) {
-      throw new Error('请先创建数字家堂');
-    }
+    if (!selfProfile) throw new Error('请先创建数字家堂');
 
     if (relation === 'father' || relation === 'mother') {
       return { fromPersonId: newPersonId, toPersonId: selfProfile.id, relationType: 'parent_of' };
@@ -105,17 +107,17 @@ function NewRelativeForm() {
     return { fromPersonId: newPersonId, toPersonId: selfProfile.id, relationType: 'grandparent_of' };
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (!canSubmit || submitting || !family) return;
 
     const alreadyExists =
       relation !== 'child' &&
       relation !== 'sibling' &&
-      existingPersons.some((p) => p.relation === relation);
+      existingPersons.some((person) => person.relation === relation);
 
     if (alreadyExists) {
-      setError(`已存在${selectedLabel}，如需修改请先删除原有记录。`);
+      setError(`已存在${selectedLabel}，如需修改请先处理原有记录。`);
       return;
     }
 
@@ -129,10 +131,9 @@ function NewRelativeForm() {
         gender,
         birthYear: birthYear ? parseInt(birthYear, 10) : null,
       });
-      const relationInput = getRelationInput(person.id);
       await createPersonRelation({
         familyId: family.id,
-        ...relationInput,
+        ...getRelationInput(person.id),
       });
       router.push('/family/tree');
     } catch (submitError) {
@@ -142,152 +143,128 @@ function NewRelativeForm() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted text-sm">加载中…</p>
-      </div>
-    );
-  }
-
-  if (error && !family) {
-    return (
-      <div className="flex items-center justify-center py-20 px-4 text-center">
-        <p className="text-muted text-sm">{error}</p>
-      </div>
-    );
-  }
-
-  if (!canManage) {
-    return (
-      <div className="flex items-center justify-center py-20 px-4 text-center">
-        <p className="text-muted text-sm">当前账号无权限添加亲属，请联系家堂管理员。</p>
-      </div>
-    );
-  }
+  if (loading) return <CenteredText text="加载中..." />;
+  if (error && !family) return <CenteredText text={error} />;
+  if (!canManage) return <CenteredText text="当前账号无权限添加亲属，请联系家堂管理员。" />;
 
   return (
-    <div className="px-4 py-6 max-w-md mx-auto">
+    <PageShell className="min-h-0" contentClassName="space-y-5">
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Relation select */}
-        <div>
-          <label className="block text-sm font-medium text-charcoal mb-1.5">
-            关系类型 <span className="text-red-400">*</span>
+        <Card className="p-4">
+          <label className="mb-2 block text-sm font-medium text-charcoal">
+            关系 <span className="text-red-400">*</span>
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {RELATION_OPTIONS.map((opt) => (
+            {RELATION_OPTIONS.map((option) => (
               <button
-                key={opt.value}
+                key={option.value}
                 type="button"
                 onClick={() => {
-                  setRelation(opt.value);
+                  setRelation(option.value);
                   setError('');
                 }}
-                className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-colors
-                  ${relation === opt.value
-                    ? 'bg-pine text-cream border-pine'
-                    : 'bg-card text-charcoal border-sand hover:border-pine/30'
-                  }`}
+                className={cn(
+                  'rounded-xl border-2 py-2.5 text-sm font-medium transition-colors',
+                  relation === option.value
+                    ? 'border-pine bg-pine text-cream'
+                    : 'border-sand bg-card text-charcoal hover:border-pine/30'
+                )}
               >
-                {opt.label}
+                {option.label}
               </button>
             ))}
           </div>
-        </div>
+        </Card>
 
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-charcoal mb-1.5">
-            姓名 <span className="text-red-400">*</span>
+        <Card className="space-y-4 p-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-charcoal">
+              姓名 <span className="text-red-400">*</span>
+            </span>
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={`请输入${selectedLabel}的姓名`}
+              maxLength={20}
+              className="bg-card"
+            />
           </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={`请输入${selectedLabel}的姓名`}
-            maxLength={20}
-            className="w-full border-2 border-sand rounded-xl px-4 py-3 text-base
-              focus:outline-none focus:border-pine transition-colors bg-card"
-          />
-        </div>
 
-        {/* Gender */}
-        <div>
-          <label className="block text-sm font-medium text-charcoal mb-1.5">性别</label>
-          <div className="flex gap-3">
-            {([['male', '男'], ['female', '女'], ['unknown', '未知']] as const).map(
-              ([val, lbl]) => (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-charcoal">性别</label>
+            <div className="flex gap-3">
+              {([
+                ['male', '男'],
+                ['female', '女'],
+                ['unknown', '未知'],
+              ] as const).map(([value, label]) => (
                 <button
-                  key={val}
+                  key={value}
                   type="button"
-                  onClick={() => setGender(val)}
-                  className={`flex-1 py-3 rounded-xl text-sm font-medium border-2 transition-colors
-                    ${gender === val
-                      ? 'bg-pine text-cream border-pine'
-                      : 'bg-card text-charcoal border-sand hover:border-pine/30'
-                    }`}
+                  onClick={() => setGender(value)}
+                  className={cn(
+                    'flex-1 rounded-xl border-2 py-3 text-sm font-medium transition-colors',
+                    gender === value
+                      ? 'border-pine bg-pine text-cream'
+                      : 'border-sand bg-card text-charcoal hover:border-pine/30'
+                  )}
                 >
-                  {lbl}
+                  {label}
                 </button>
-              )
-            )}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Birth year */}
-        <div>
-          <label className="block text-sm font-medium text-charcoal mb-1.5">
-            出生年份 <span className="text-muted font-normal">（可选）</span>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-charcoal">
+              出生年份 <span className="font-normal text-muted">（可选）</span>
+            </span>
+            <select
+              value={birthYear}
+              onChange={(event) => setBirthYear(event.target.value)}
+              className="w-full appearance-none rounded-xl border-2 border-sand bg-card px-4 py-3 text-base transition-colors focus:border-pine focus:outline-none"
+            >
+              <option value="">不填写</option>
+              {YEARS.map((year) => (
+                <option key={year} value={year}>
+                  {year} 年
+                </option>
+              ))}
+            </select>
           </label>
-          <select
-            value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
-            className="w-full border-2 border-sand rounded-xl px-4 py-3 text-base
-              focus:outline-none focus:border-pine transition-colors bg-card appearance-none"
-          >
-            <option value="">不填写</option>
-            {YEARS.map((y) => (
-              <option key={y} value={y}>{y} 年</option>
-            ))}
-          </select>
-        </div>
+        </Card>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-charcoal mb-1.5">
-            手机号 <span className="text-muted font-normal">（可选，用于邀请认领）</span>
-          </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="不强制填写"
-            maxLength={20}
-            className="w-full border-2 border-sand rounded-xl px-4 py-3 text-base
-              focus:outline-none focus:border-pine transition-colors bg-card"
-          />
-        </div>
+        <Card className="border-gold/25 bg-gold/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold">
+              <Link2 size={17} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-charcoal">邀请认领在专门页面生成</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                添加亲属后，可前往“邀请认领”页面生成链接，发给家人完成认领和档案补充。
+              </p>
+              <Link href="/family/invite" className="mt-3 inline-flex text-xs font-semibold text-pine">
+                前往邀请认领
+              </Link>
+            </div>
+          </div>
+        </Card>
 
-        <p className="text-xs text-muted leading-relaxed bg-sand/50 rounded-xl p-3">
-          录入的亲属信息仅家族内部可见。未认领成员将显示为待认领状态，信息不对外公开。
-        </p>
+        {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-500">{error}</p>}
 
-        {error && (
-          <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={!canSubmit || submitting}
-          className={`w-full py-4 rounded-xl text-base font-semibold transition-all
-            ${canSubmit
-              ? 'bg-pine text-cream shadow-sm hover:bg-pine-light active:scale-[0.98]'
-              : 'bg-sand text-muted cursor-not-allowed'
-            }`}
-        >
-          {submitting ? '保存中…' : '保存并返回家谱'}
-        </button>
+        <Button type="submit" disabled={!canSubmit || submitting} fullWidth size="lg">
+          {submitting ? '保存中...' : '保存并返回家谱'}
+        </Button>
       </form>
+    </PageShell>
+  );
+}
+
+function CenteredText({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center px-4 py-20 text-center">
+      <p className="text-sm text-muted">{text}</p>
     </div>
   );
 }
@@ -295,14 +272,8 @@ function NewRelativeForm() {
 export default function NewRelativePage() {
   return (
     <div className="min-h-screen bg-cream">
-      <AppHeader title="添加家庭成员" backHref="/family/tree" />
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-20">
-            <p className="text-muted text-sm">加载中…</p>
-          </div>
-        }
-      >
+      <AppHeader title="添加家人成员" backHref="/family/tree" />
+      <Suspense fallback={<CenteredText text="加载中..." />}>
         <NewRelativeForm />
       </Suspense>
     </div>

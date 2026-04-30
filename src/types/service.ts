@@ -14,12 +14,15 @@ import type {
   InviteToken,
   LivingStatus,
   FamilyMeeting,
+  FamilyMeetingOpinion,
   FamilyMeetingVote,
   FamilyOutput,
   FamilyOutputType,
   FamilyPhoto,
   FamilyStory,
   MeetingType,
+  MeetingOpinionStance,
+  MeetingOpinionVisibility,
   PersonProfile,
   PersonRelation,
   RelationType,
@@ -381,6 +384,35 @@ export interface SubmitMeetingVoteInput {
   optionText: string;
 }
 
+export interface CreateMeetingOpinionInput {
+  meetingId: string;
+  stance?: MeetingOpinionStance;
+  content: string;
+  visibility?: MeetingOpinionVisibility;
+}
+
+export interface UpdateMeetingOpinionInput {
+  stance?: MeetingOpinionStance;
+  content?: string;
+  visibility?: MeetingOpinionVisibility;
+  status?: FamilyMeetingOpinion['status'];
+}
+
+export interface MeetingOpinionSummary {
+  meetingId: string;
+  total: number;
+  agree: number;
+  disagree: number;
+  neutral: number;
+  suggestion: number;
+  question: number;
+}
+
+export interface FamilyMeetingOpinionDetail {
+  opinion: FamilyMeetingOpinion;
+  authorDisplayName: string | null;
+}
+
 export interface FamilyReminderSummary {
   todayCount: number;
   weekCount: number;
@@ -398,5 +430,6 @@ export type FamilyStoryItem = FamilyStory;
 export type FamilyPhotoItem = FamilyPhoto;
 export type FamilyMeetingItem = FamilyMeeting;
 export type FamilyMeetingVoteItem = FamilyMeetingVote;
+export type FamilyMeetingOpinionItem = FamilyMeetingOpinion;
 export type FamilyOutputItem = FamilyOutput;
 export type FamilyCalendarEventItem = FamilyCalendarEvent;

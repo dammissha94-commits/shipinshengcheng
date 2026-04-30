@@ -1,50 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 吾家祠堂 App
 
-## Getting Started
+吾家祠堂 App 的产品定位是：
 
-First, run the development server:
+家族关系操作系统 + 数字家堂 + 家族记忆资产库。
+
+## 当前功能
+
+- 姓氏入口
+- 创建数字家堂
+- 三代家谱
+- 添加亲属
+- 邀请认领
+- 成员列表
+- 家人档案
+- 家堂设置
+- 家族故事
+- 家族相册
+- 家族议事
+- 议事投票
+- 家族日历
+- 生日提醒
+- 家庭节点提醒中心
+- 成果物预览
+
+## 技术栈
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Supabase
+- App Router
+
+## 本地运行
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+默认开发服务端口由 `package.json` 中的 `dev` 脚本控制。
 
-## Supabase
+## 环境变量
 
-The MVP still works with browser localStorage. To enable Supabase-backed services,
-copy `.env.example` to `.env.local` and fill in:
+本地需要创建 `.env.local`：
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Apply the schema in `supabase/migrations/202604290001_create_family_core_schema.sql`
-to your Supabase project before using the service functions with
-`createSupabaseServiceClient()`.
+注意：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 不要提交 `.env.local`
+- 不要使用 `service_role` key
+- 不要把真实密钥写进代码
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 数据库迁移
 
-## Learn More
+Supabase migrations 位于：
 
-To learn more about Next.js, take a look at the following resources:
+```text
+supabase/migrations/
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+执行时需在 Supabase SQL Editor 按顺序执行。执行前请确认目标项目正确，执行后再进行注册、创建家堂、邀请认领等真实流程测试。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 当前版本边界
 
-## Deploy on Vercel
+当前版本不做：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 支付
+- IM
+- 开放社区
+- 大宗祠
+- 纪念馆
+- 数字牌位
+- 上香供奉
+- 募捐捐款
+- 宗教化功能
+- 直播祭拜
+- 祭拜商城
+- 短信提醒
+- 微信模板消息
+- Push 推送
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+统一使用“数字家堂、家族关系、家人档案、家族记忆、纪念日、家族日历、家庭节点、生日提醒、家庭聚会、家族故事、家族相册、家族议事、成果物、邀请认领”等表达。

@@ -15,6 +15,9 @@ export type Visibility = 'private' | 'family' | 'public';
 export type Gender = 'male' | 'female' | 'unknown';
 export type MeetingType = 'notice' | 'vote' | 'event' | 'memorial_day';
 export type MeetingStatus = 'open' | 'closed' | 'archived';
+export type MeetingOpinionStance = 'agree' | 'disagree' | 'neutral' | 'suggestion' | 'question';
+export type MeetingOpinionStatus = 'active' | 'hidden' | 'archived';
+export type MeetingOpinionVisibility = 'private' | 'family';
 export type ContentStatus = 'active' | 'archived' | 'hidden';
 export type FamilyOutputType =
   | 'three_generation_tree'
@@ -263,6 +266,19 @@ export interface FamilyMeetingVote {
   voter_user_id: string;
   option_text: string;
   created_at: string;
+}
+
+export interface FamilyMeetingOpinion {
+  id: string;
+  family_id: string;
+  meeting_id: string;
+  author_user_id: string | null;
+  stance: MeetingOpinionStance;
+  content: string;
+  status: MeetingOpinionStatus;
+  visibility: MeetingOpinionVisibility;
+  created_at: string;
+  updated_at: string;
 }
 
 export type FamilyStoryRecord = FamilyStory;
