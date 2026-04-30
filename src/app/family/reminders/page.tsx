@@ -206,6 +206,9 @@ function ReminderCard({
             查看家人档案
           </Link>
         )}
+        <Link href={`/family/calendar/${item.event.id}`} className="ml-auto text-xs font-medium text-pine">
+          查看详情
+        </Link>
       </div>
     </article>
   );

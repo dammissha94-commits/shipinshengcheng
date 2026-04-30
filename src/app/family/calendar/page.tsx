@@ -280,7 +280,11 @@ export default function FamilyCalendarPage() {
             <SectionTitle title="近期提醒" subtitle="按日历日期自动排序" />
             <div className="grid gap-2">
               {upcomingEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between rounded-xl border border-gold/25 bg-gold/10 px-3 py-2">
+                <Link
+                  key={event.id}
+                  href={`/family/calendar/${event.id}`}
+                  className="flex items-center justify-between rounded-xl border border-gold/25 bg-gold/10 px-3 py-2 transition-colors hover:bg-gold/15"
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-charcoal">{event.title}</p>
                     <p className="text-xs text-muted">{formatDate(event.event_date)} · {reminderText(event)}</p>
@@ -288,7 +292,7 @@ export default function FamilyCalendarPage() {
                   <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-gold">
                     {relativeLabel(event.event_date)}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -413,9 +417,14 @@ function CalendarEventCard({
       {event.description && <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-muted">{event.description}</p>}
       <div className="flex items-center justify-between gap-3 border-t border-sand/60 pt-3 text-xs text-muted">
         <span>提醒：{reminderText(event)}</span>
-        <button type="button" onClick={onArchive} disabled={archiving} className="shrink-0 font-medium text-pine disabled:opacity-50">
-          {archiving ? '处理中...' : '归档'}
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <Link href={`/family/calendar/${event.id}`} className="font-medium text-pine">
+            查看详情
+          </Link>
+          <button type="button" onClick={onArchive} disabled={archiving} className="font-medium text-pine disabled:opacity-50">
+            {archiving ? '处理中...' : '归档'}
+          </button>
+        </div>
       </div>
     </article>
   );

@@ -322,6 +322,19 @@ export interface FamilyReminderItem {
   isAutoBirthday: boolean;
 }
 
+export interface CalendarEventDetail {
+  event: FamilyCalendarEvent;
+  relatedPerson: PersonProfile | null;
+  sourcePerson: PersonProfile | null;
+}
+
+export interface CalendarEventPermission {
+  canEdit: boolean;
+  canArchive: boolean;
+  isAutoBirthday: boolean;
+  redirectPersonId: string | null;
+}
+
 export interface FamilyReminderSummary {
   todayCount: number;
   weekCount: number;

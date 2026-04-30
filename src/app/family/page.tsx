@@ -111,7 +111,10 @@ function RecentFamilyNodeCard({ summary }: { summary: FamilyReminderSummary | nu
 
 function RecentFamilyNodeItem({ item }: { item: FamilyReminderItem }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-cream px-3 py-2">
+    <Link
+      href={`/family/calendar/${item.event.id}`}
+      className="flex items-center justify-between gap-3 rounded-xl bg-cream px-3 py-2 transition-colors hover:bg-sand/40"
+    >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-charcoal">{item.event.title}</p>
         <p className="text-xs text-muted">{formatReminderDate(item.event.event_date)} · {item.typeLabel}</p>
@@ -119,7 +122,7 @@ function RecentFamilyNodeItem({ item }: { item: FamilyReminderItem }) {
       <span className="shrink-0 rounded-full bg-gold/10 px-2.5 py-1 text-xs font-medium text-gold">
         {item.badge}
       </span>
-    </div>
+    </Link>
   );
 }
 

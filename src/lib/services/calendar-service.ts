@@ -1,5 +1,7 @@
 import type { ActionLog, FamilyCalendarEvent, PersonProfile } from '@/types/domain';
 import type {
+  CalendarEventDetail,
+  CalendarEventPermission,
   CreateFamilyCalendarEventInput,
   FamilyReminderItem,
   UpcomingFamilyEventsResult,
@@ -83,6 +85,79 @@ async function getCalendarEvent(
   const event = result.data?.[0];
   if (!event) throw new Error('家族日历记录不存在');
   return event;
+}
+
+async function fetchPersonProfile(
+  personId: string,
+  client: SupabaseServiceClient
+): Promise<PersonProfile | null> {
+  const result = await client
+    .from<PersonProfile>('person_profiles')
+    .select('*')
+    .eq('id', personId);
+  if (result.error) return null;
+  return result.data?.[0] ?? null;
+}
+
+export async function getFamilyCalendarEvent(
+  eventId: string,
+  client?: SupabaseServiceClient
+): Promise<CalendarEventDetail | null> {
+  const resolvedClient = getClient(client);
+  if (!resolvedClient) return null;
+
+  const result = await resolvedClient
+    .from<FamilyCalendarEvent>('family_calendar_events')
+    .select('*')
+    .eq('id', eventId);
+  throwServiceError(result.error, 'get family calendar event failed');
+  const event = result.data?.[0];
+  if (!event) return null;
+
+  if (!(await isFamilyMember(event.family_id))) {
+    throw new Error('你暂无权限执行此操作');
+  }
+
+  const relatedPerson = event.related_person_id
+    ? await fetchPersonProfile(event.related_person_id, resolvedClient)
+    : null;
+
+  let sourcePerson: PersonProfile | null = null;
+  if (event.source_person_id) {
+    sourcePerson =
+      relatedPerson && relatedPerson.id === event.source_person_id
+        ? relatedPerson
+        : await fetchPersonProfile(event.source_person_id, resolvedClient);
+  }
+
+  return { event, relatedPerson, sourcePerson };
+}
+
+export async function canEditCalendarEvent(
+  event: FamilyCalendarEvent
+): Promise<CalendarEventPermission> {
+  const isAutoBirthday = event.source_type === 'person_birthday';
+  const redirectPersonId = isAutoBirthday ? event.source_person_id : null;
+
+  const user = await getCurrentUser();
+  if (!user) {
+    return { canEdit: false, canArchive: false, isAutoBirthday, redirectPersonId };
+  }
+
+  if (!(await isFamilyMember(event.family_id))) {
+    return { canEdit: false, canArchive: false, isAutoBirthday, redirectPersonId };
+  }
+
+  const isCreator = event.creator_user_id === user.id;
+  const canManage = await canManageFamilyMemory(event.family_id);
+  const allowed = isCreator || canManage;
+
+  return {
+    canEdit: allowed,
+    canArchive: allowed,
+    isAutoBirthday,
+    redirectPersonId,
+  };
 }
 
 export async function listFamilyCalendarEvents(
@@ -234,8 +309,25 @@ export async function updateFamilyCalendarEvent(
   if (!user) throw new Error('请先登录');
 
   const existing = await getCalendarEvent(eventId, resolvedClient);
+  if (!(await isFamilyMember(existing.family_id))) throw new Error('你暂无权限执行此操作');
+
   const canManage = await canManageFamilyMemory(existing.family_id);
   if (existing.creator_user_id !== user.id && !canManage) throw new Error('你暂无权限执行此操作');
+
+  if (existing.source_type === 'person_birthday') {
+    if (input.eventDate !== undefined && input.eventDate !== existing.event_date) {
+      throw new Error('自动生日提醒的日期请前往家人档案修改');
+    }
+    if (input.recurrence !== undefined && input.recurrence !== existing.recurrence) {
+      throw new Error('自动生日提醒的重复规则由家人档案生日同步管理');
+    }
+    if (input.sourceType !== undefined && input.sourceType !== existing.source_type) {
+      throw new Error('不允许修改自动生日提醒的来源类型');
+    }
+    if (input.sourcePersonId !== undefined && input.sourcePersonId !== existing.source_person_id) {
+      throw new Error('不允许修改自动生日提醒关联的家人');
+    }
+  }
 
   const result = await resolvedClient
     .from<FamilyCalendarEvent>('family_calendar_events')
@@ -260,6 +352,16 @@ export async function updateFamilyCalendarEvent(
     .single();
 
   throwServiceError(result.error, 'update family calendar event failed');
+
+  await writeActionLog(resolvedClient, {
+    family_id: existing.family_id,
+    actor_user_id: user.id,
+    target_type: 'family_calendar_event',
+    target_id: eventId,
+    action_type: 'update_family_calendar_event',
+    metadata: { event_type: result.data!.event_type },
+  });
+
   return result.data!;
 }
 
