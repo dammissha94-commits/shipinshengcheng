@@ -3,6 +3,7 @@
 'use client';
 
 import { memo } from 'react';
+import Link from 'next/link';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
@@ -29,7 +30,7 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
     <div
       className={cn(
         'relative w-[168px] rounded-2xl border bg-card px-3 py-2.5 shadow-sm transition-all duration-200',
-        'hover:shadow-md',
+        'cursor-pointer hover:shadow-md',
         isClaimed ? 'border-pine/40' : 'border-gold/40',
         isDeceased && 'opacity-90',
         highlightState === 'selected' && 'scale-[1.04] border-pine bg-pine/5 shadow-lg shadow-pine/15',
@@ -86,7 +87,16 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
         {yearLabel && <span className="rounded-full bg-cream px-2 py-0.5 text-muted">{yearLabel}</span>}
       </div>
 
-      <p className="mt-2 text-[10px] text-muted/80">点击高亮亲属关系</p>
+      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted/80">
+        <span>点击高亮亲属关系</span>
+        <Link
+          href={`/family/members/${node.id}`}
+          onClick={(event) => event.stopPropagation()}
+          className="shrink-0 font-medium text-pine"
+        >
+          查看档案
+        </Link>
+      </div>
 
       <Handle
         type="source"

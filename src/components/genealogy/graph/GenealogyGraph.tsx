@@ -76,7 +76,7 @@ function GenealogyGraphInner({
     fitView({ padding: 0.25, duration: 420 });
   }, [fitView, fitViewSignal]);
 
-  const { exportImage, isExporting, errorMessage, resetError } = useExportGenealogyImage({
+  const { exportImage, isExporting, errorMessage, successMessage, resetError } = useExportGenealogyImage({
     fileName: exportFileName,
   });
 
@@ -99,6 +99,9 @@ function GenealogyGraphInner({
         edgeTypes={edgeTypes}
         nodesConnectable={false}
         nodesDraggable
+        panOnDrag
+        zoomOnPinch
+        zoomOnScroll
         edgesFocusable={false}
         minZoom={0.3}
         maxZoom={1.6}
@@ -125,15 +128,22 @@ function GenealogyGraphInner({
         )}
       >
         {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-        {isExporting ? '正在导出...' : '导出关系图'}
+        {isExporting ? '正在生成关系图' : '导出 PNG'}
       </button>
 
-      {errorMessage && (
-        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700 shadow-sm">
-          <button type="button" onClick={resetError} className="mr-2 text-red-700/70" aria-label="关闭提示">
+      {(errorMessage || successMessage) && (
+        <div
+          className={cn(
+            'absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-full border px-3 py-1.5 text-xs shadow-sm',
+            errorMessage
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          )}
+        >
+          <button type="button" onClick={resetError} className="mr-2 opacity-70" aria-label="关闭提示">
             x
           </button>
-          {errorMessage}
+          {errorMessage || successMessage}
         </div>
       )}
     </div>

@@ -59,7 +59,12 @@ export function filterGraphEdgesByRelation(
   edges: GenealogyGraphEdge[],
   filters: GraphRelationFilter
 ): GenealogyGraphEdge[] {
-  return edges.filter((edge) => filters[edge.relationType]);
+  return edges.filter((edge) => {
+    if (edge.relationType === 'parent_of' || edge.relationType === 'child_of') {
+      return filters.parent_of && filters.child_of;
+    }
+    return filters[edge.relationType];
+  });
 }
 
 export function buildHighlightState(

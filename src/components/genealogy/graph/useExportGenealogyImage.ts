@@ -3,7 +3,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react';
+import { getNodesBounds, getViewportForBounds, useReactFlow } from '@xyflow/react';
 import { toPng } from 'html-to-image';
 
 interface UseExportGenealogyImageOptions {
@@ -15,6 +15,7 @@ interface UseExportGenealogyImageResult {
   exportImage: () => Promise<void>;
   isExporting: boolean;
   errorMessage: string | null;
+  successMessage: string | null;
   resetError: () => void;
 }
 
@@ -25,13 +26,18 @@ export function useExportGenealogyImage({
   const reactFlow = useReactFlow();
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const resetError = useCallback(() => setErrorMessage(null), []);
+  const resetError = useCallback(() => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }, []);
 
   const exportImage = useCallback(async () => {
     if (typeof window === 'undefined') return;
     setIsExporting(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
       const viewport = document.querySelector('.react-flow__viewport') as HTMLElement | null;
@@ -69,12 +75,18 @@ export function useExportGenealogyImage({
       document.body.appendChild(link);
       link.click();
       link.remove();
+      setSuccessMessage('PNG 已生成');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '导出关系图失败');
+      const message = error instanceof Error ? error.message : '';
+      setErrorMessage(
+        message === '暂无可导出的关系图' || message === '未找到关系图视图'
+          ? message
+          : '导出关系图失败，可尝试使用电脑浏览器导出'
+      );
     } finally {
       setIsExporting(false);
     }
   }, [backgroundColor, fileName, reactFlow]);
 
-  return { exportImage, isExporting, errorMessage, resetError };
+  return { exportImage, isExporting, errorMessage, successMessage, resetError };
 }

@@ -145,6 +145,12 @@ export default function GenealogyGraphPage() {
   function toggleRelationFilter(relationType: RelationType) {
     setRelationFilters((current) => ({
       ...current,
+      ...(relationType === 'parent_of' || relationType === 'child_of'
+        ? {
+            parent_of: !(current.parent_of && current.child_of),
+            child_of: !(current.parent_of && current.child_of),
+          }
+        : {}),
       [relationType]: !current[relationType],
     }));
   }
