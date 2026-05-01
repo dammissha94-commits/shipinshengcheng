@@ -34,8 +34,14 @@ function sanitizeError(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : fallback;
   if (/auth session missing/i.test(message)) return '请先登录';
   if (/permission|denied|forbidden|权限/i.test(message)) return '你暂无权限执行此操作';
-  if (/failed|violates|duplicate key/i.test(message)) return fallback;
-  return message;
+  if (
+    /failed|violates|duplicate key|does not exist|relation .* does not exist|could not find the table/i.test(
+      message
+    )
+  ) {
+    return fallback;
+  }
+  return fallback;
 }
 
 function percent(value: number, total: number): number {
@@ -142,6 +148,15 @@ export default function FamilyStatisticsPage() {
             <ProgressBar value={completion.score} className="mt-4 bg-cream/20" fillClassName="bg-gold" />
           </div>
         </Card>
+
+        {(statistics.warnings?.length ?? 0) > 0 && (
+          <Card className="border-gold/30 bg-gold/10 p-4">
+            <p className="text-sm font-semibold text-gold">部分统计项暂不可用</p>
+            <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted">
+              {statistics.warnings?.map((warning) => <li key={warning}>{warning}</li>)}
+            </ul>
+          </Card>
+        )}
 
         <section className="grid grid-cols-2 gap-3">
           <MetricCard icon={<Users size={18} />} label="待认领人数" value={statistics.unclaimedPersons} />

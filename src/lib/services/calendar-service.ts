@@ -188,6 +188,17 @@ async function writeActionLog(
   throwServiceError(result.error, 'write action log failed');
 }
 
+async function writeActionLogSafely(
+  client: SupabaseServiceClient,
+  log: Omit<ActionLog, 'id' | 'created_at'>
+): Promise<void> {
+  try {
+    await writeActionLog(client, log);
+  } catch {
+    // Do not block calendar save/update flows on log failures.
+  }
+}
+
 async function getCalendarEvent(
   eventId: string,
   client: SupabaseServiceClient
@@ -372,32 +383,37 @@ export async function createFamilyCalendarEvent(
   if (!user) throw new Error('请先登录');
   if (!(await isFamilyMember(input.familyId))) throw new Error('你暂无权限执行此操作');
 
+  const eventValues: Partial<FamilyCalendarEvent> = {
+    family_id: input.familyId,
+    creator_user_id: user.id,
+    related_person_id: input.relatedPersonId ?? null,
+    event_type: input.eventType,
+    title: input.title,
+    description: input.description ?? null,
+    event_date: input.eventDate,
+    recurrence: input.recurrence ?? 'yearly',
+    remind_d7: input.remindD7 ?? true,
+    remind_d1: input.remindD1 ?? true,
+    remind_day: input.remindDay ?? true,
+    visibility: input.visibility ?? 'family',
+    status: 'active',
+  };
+
+  if (input.sourceType || input.sourcePersonId || input.sourceKey) {
+    eventValues.source_type = input.sourceType ?? 'manual';
+    eventValues.source_person_id = input.sourcePersonId ?? null;
+    eventValues.source_key = input.sourceKey ?? null;
+  }
+
   const result = await resolvedClient
     .from<FamilyCalendarEvent>('family_calendar_events')
-    .insert({
-      family_id: input.familyId,
-      creator_user_id: user.id,
-      related_person_id: input.relatedPersonId ?? null,
-      event_type: input.eventType,
-      title: input.title,
-      description: input.description ?? null,
-      event_date: input.eventDate,
-      recurrence: input.recurrence ?? 'yearly',
-      remind_d7: input.remindD7 ?? true,
-      remind_d1: input.remindD1 ?? true,
-      remind_day: input.remindDay ?? true,
-      visibility: input.visibility ?? 'family',
-      status: 'active',
-      source_type: input.sourceType ?? 'manual',
-      source_person_id: input.sourcePersonId ?? null,
-      source_key: input.sourceKey ?? null,
-    })
+    .insert(eventValues)
     .select('*')
     .single();
 
   throwServiceError(result.error, 'create family calendar event failed');
 
-  await writeActionLog(resolvedClient, {
+  await writeActionLogSafely(resolvedClient, {
     family_id: input.familyId,
     actor_user_id: user.id,
     target_type: 'family_calendar_event',
@@ -463,7 +479,7 @@ export async function updateFamilyCalendarEvent(
 
   throwServiceError(result.error, 'update family calendar event failed');
 
-  await writeActionLog(resolvedClient, {
+  await writeActionLogSafely(resolvedClient, {
     family_id: existing.family_id,
     actor_user_id: user.id,
     target_type: 'family_calendar_event',
@@ -564,7 +580,7 @@ export async function syncPersonBirthdayEvent(
 
   throwServiceError(result.error, 'sync person birthday event failed');
 
-  await writeActionLog(resolvedClient, {
+  await writeActionLogSafely(resolvedClient, {
     family_id: person.family_id,
     actor_user_id: user.id,
     target_type: 'family_calendar_event',
@@ -598,7 +614,7 @@ export async function unsyncPersonBirthdayEvent(
 
   throwServiceError(result.error, 'unsync person birthday event failed');
 
-  await writeActionLog(resolvedClient, {
+  await writeActionLogSafely(resolvedClient, {
     family_id: person.family_id,
     actor_user_id: user.id,
     target_type: 'family_calendar_event',
@@ -631,7 +647,7 @@ export async function archiveFamilyCalendarEvent(
 
   throwServiceError(result.error, 'archive family calendar event failed');
 
-  await writeActionLog(resolvedClient, {
+  await writeActionLogSafely(resolvedClient, {
     family_id: existing.family_id,
     actor_user_id: user.id,
     target_type: 'family_calendar_event',

@@ -93,10 +93,17 @@ function reminderText(event: FamilyCalendarEvent): string {
 function sanitizeError(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : fallback;
   if (message.includes('Auth session missing')) return '请先登录';
-  if (message.includes('failed') || message.includes('violates') || message.includes('permission denied')) {
+  if (
+    message.includes('failed') ||
+    message.includes('violates') ||
+    message.includes('permission denied') ||
+    message.includes('does not exist') ||
+    message.includes('relation') ||
+    message.includes('could not find the table')
+  ) {
     return fallback;
   }
-  return message;
+  return fallback;
 }
 
 export default function FamilyCalendarPage() {
@@ -217,7 +224,7 @@ export default function FamilyCalendarPage() {
       });
       setShowForm(false);
     } catch (submitError) {
-      setError(sanitizeError(submitError, '保存家族日历失败'));
+      setError(sanitizeError(submitError, '保存失败，请检查网络或权限'));
     } finally {
       setSubmitting(false);
     }

@@ -19,7 +19,6 @@ import type {
   RelationDistribution,
 } from '@/types/service';
 import type { SupabaseServiceClient } from './service-client';
-import { throwServiceError } from './service-client';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 const NO_PERMISSION_MESSAGE = '你暂无权限执行此操作';
@@ -34,6 +33,7 @@ interface StatisticsSourceData {
   opinions: FamilyMeetingOpinion[];
   events: FamilyCalendarEvent[];
   outputs: FamilyOutput[];
+  warnings: string[];
 }
 
 function getClient(client?: SupabaseServiceClient): SupabaseServiceClient | null {
@@ -59,52 +59,48 @@ async function loadStatisticsSourceData(
 ): Promise<StatisticsSourceData> {
   const resolved = requireClient(client);
   await assertFamilyMember(familyId);
+  const warnings: string[] = [];
 
-  const [
-    personsResult,
-    relationsResult,
-    storiesResult,
-    photosResult,
-    meetingsResult,
-    votesResult,
-    opinionsResult,
-    eventsResult,
-    outputsResult,
-  ] = await Promise.all([
-    resolved.from<PersonProfile>('person_profiles').select('*').eq('family_id', familyId),
-    resolved.from<PersonRelation>('person_relations').select('*').eq('family_id', familyId),
-    resolved.from<FamilyStory>('family_stories').select('*').eq('family_id', familyId),
-    resolved.from<FamilyPhoto>('family_photos').select('*').eq('family_id', familyId),
-    resolved.from<FamilyMeeting>('family_meetings').select('*').eq('family_id', familyId),
-    resolved.from<FamilyMeetingVote>('family_meeting_votes').select('*').eq('family_id', familyId),
-    resolved.from<FamilyMeetingOpinion>('family_meeting_opinions').select('*').eq('family_id', familyId),
-    resolved.from<FamilyCalendarEvent>('family_calendar_events').select('*').eq('family_id', familyId),
-    resolved.from<FamilyOutput>('family_outputs').select('*').eq('family_id', familyId),
-  ]);
+  async function safeLoadRows<T>(
+    table: string,
+    warningLabel: string
+  ): Promise<T[]> {
+    const result = await resolved.from<T>(table).select('*').eq('family_id', familyId);
+    if (result.error) {
+      warnings.push(`统计项「${warningLabel}」暂不可用，请先执行对应 migration。`);
+      return [];
+    }
+    return result.data ?? [];
+  }
 
-  throwServiceError(personsResult.error, 'load statistics persons failed');
-  throwServiceError(relationsResult.error, 'load statistics relations failed');
-  throwServiceError(storiesResult.error, 'load statistics stories failed');
-  throwServiceError(photosResult.error, 'load statistics photos failed');
-  throwServiceError(meetingsResult.error, 'load statistics meetings failed');
-  throwServiceError(votesResult.error, 'load statistics votes failed');
-  throwServiceError(opinionsResult.error, 'load statistics opinions failed');
-  throwServiceError(eventsResult.error, 'load statistics events failed');
-  throwServiceError(outputsResult.error, 'load statistics outputs failed');
+  const [persons, relations, stories, photos, meetings, votes, opinions, events, outputs] =
+    await Promise.all([
+      safeLoadRows<PersonProfile>('person_profiles', '家人档案'),
+      safeLoadRows<PersonRelation>('person_relations', '亲属关系'),
+      safeLoadRows<FamilyStory>('family_stories', '家族故事'),
+      safeLoadRows<FamilyPhoto>('family_photos', '家族相册'),
+      safeLoadRows<FamilyMeeting>('family_meetings', '家族议事'),
+      safeLoadRows<FamilyMeetingVote>('family_meeting_votes', '议事投票'),
+      safeLoadRows<FamilyMeetingOpinion>('family_meeting_opinions', '议事意见'),
+      safeLoadRows<FamilyCalendarEvent>('family_calendar_events', '家族日历'),
+      safeLoadRows<FamilyOutput>('family_outputs', '成果物预览'),
+    ]);
 
-  const meetings = (meetingsResult.data ?? []).filter((meeting) => meeting.status !== 'archived');
-  const activeMeetingIds = new Set(meetings.map((m) => m.id));
+  const activeMeetings = meetings.filter((meeting) => meeting.status !== 'archived');
+  const activeMeetingIds = new Set(activeMeetings.map((meeting) => meeting.id));
+  const activeOpinions = opinions.filter((opinion) => opinion.status === 'active');
 
   return {
-    persons: personsResult.data ?? [],
-    relations: (relationsResult.data ?? []).filter((relation) => relation.status === 'active'),
-    stories: (storiesResult.data ?? []).filter((story) => story.status === 'active'),
-    photos: (photosResult.data ?? []).filter((photo) => photo.status === 'active'),
-    meetings,
-    votes: (votesResult.data ?? []).filter((vote) => activeMeetingIds.has(vote.meeting_id)),
-    opinions: (opinionsResult.data ?? []).filter((opinion) => opinion.status === 'active'),
-    events: (eventsResult.data ?? []).filter((event) => event.status === 'active'),
-    outputs: (outputsResult.data ?? []).filter((output) => output.status !== 'archived'),
+    persons,
+    relations: relations.filter((relation) => relation.status === 'active'),
+    stories: stories.filter((story) => story.status === 'active'),
+    photos: photos.filter((photo) => photo.status === 'active'),
+    meetings: activeMeetings,
+    votes: votes.filter((vote) => activeMeetingIds.has(vote.meeting_id)),
+    opinions: activeOpinions,
+    events: events.filter((event) => event.status === 'active'),
+    outputs: outputs.filter((output) => output.status !== 'archived'),
+    warnings,
   };
 }
 
@@ -228,6 +224,7 @@ export async function getFamilyStatistics(
     birthdayEvents: data.events.filter((event) => event.event_type === 'birthday').length,
     upcomingEvents: data.events.filter((event) => isUpcomingEvent(event, now)).length,
     totalOutputs: data.outputs.length,
+    warnings: data.warnings,
   };
 }
 
@@ -237,7 +234,10 @@ export async function getFamilyCompletionScore(
 ): Promise<FamilyCompletionScore> {
   const user = await getCurrentUser();
   const data = await loadStatisticsSourceData(familyId, client);
-  return buildCompletionScore(data, user?.id ?? null);
+  return {
+    ...buildCompletionScore(data, user?.id ?? null),
+    warnings: data.warnings,
+  };
 }
 
 export async function getRelationDistribution(

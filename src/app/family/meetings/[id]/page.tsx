@@ -36,6 +36,7 @@ const STANCE_LABELS: Record<MeetingOpinionStance, string> = {
   suggestion: '建议',
   question: '提问',
 };
+const VOTE_OPTIONS = ['同意', '不同意', '待商量'] as const;
 
 function sanitizeError(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : fallback;
@@ -43,7 +44,17 @@ function sanitizeError(error: unknown, fallback: string): string {
   if (message.includes('failed') || message.includes('violates') || message.includes('permission denied')) {
     return fallback;
   }
-  return message;
+  if (
+    message.includes('议事不存在或已不可访问') ||
+    message.includes('你已参与过本次投票') ||
+    message.includes('投票提交失败') ||
+    message.includes('投票数据暂不可用') ||
+    message.includes('议事意见暂不可用') ||
+    message.includes('你暂无权限执行此操作')
+  ) {
+    return message;
+  }
+  return fallback;
 }
 
 function formatTime(iso: string): string {
@@ -54,6 +65,10 @@ function formatTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function voteCount(summary: MeetingVoteSummary, option: string): number {
+  return summary.options.find((item) => item.optionText === option)?.count ?? 0;
 }
 
 export default function MeetingDetailPage() {
@@ -70,9 +85,10 @@ export default function MeetingDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [opinions, setOpinions] = useState<FamilyMeetingOpinionDetail[]>([]);
   const [summary, setSummary] = useState<MeetingOpinionSummary | null>(null);
-  const [voteText, setVoteText] = useState('');
   const [voteSubmitting, setVoteSubmitting] = useState(false);
   const [opinionSubmitting, setOpinionSubmitting] = useState(false);
+  const [voteSummaryError, setVoteSummaryError] = useState('');
+  const [opinionLoadError, setOpinionLoadError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStance, setEditStance] = useState<MeetingOpinionStance>('neutral');
   const [editContent, setEditContent] = useState('');
@@ -117,17 +133,25 @@ export default function MeetingDetailPage() {
         return;
       }
 
-      const [opinionList, opinionSummary, admin] = await Promise.all([
-        listMeetingOpinions(meetingId),
-        getMeetingOpinionSummary(meetingId),
-        isFamilyAdmin(currentDetail.meeting.family_id),
-      ]);
+      const admin = await isFamilyAdmin(currentDetail.meeting.family_id);
+
+      let opinionList: FamilyMeetingOpinionDetail[] = [];
+      let opinionSummary: MeetingOpinionSummary | null = null;
+      let opinionWarning = '';
+      try {
+        opinionList = await listMeetingOpinions(meetingId);
+        opinionSummary = await getMeetingOpinionSummary(meetingId);
+      } catch {
+        opinionWarning = '议事意见暂不可用，请先执行修复迁移';
+      }
 
       setDetail(currentDetail);
       setRole(familyRole);
       setIsAdmin(admin);
       setOpinions(opinionList);
       setSummary(opinionSummary);
+      setOpinionLoadError(opinionWarning);
+      setVoteSummaryError(currentDetail.voteSummaryError ?? '');
     } catch (e) {
       setError(sanitizeError(e, '加载议事详情失败'));
     } finally {
@@ -142,21 +166,28 @@ export default function MeetingDetailPage() {
   }, [meetingId]);
 
   const meeting = detail?.meeting;
-  const voteSummary: MeetingVoteSummary | null = detail?.voteSummary ?? null;
+  const voteSummary: MeetingVoteSummary | null =
+    detail?.voteSummary ?? {
+      meetingId: meeting?.id ?? meetingId ?? '',
+      totalVotes: 0,
+      options: [],
+      currentUserHasVoted: false,
+      currentUserOption: null,
+    };
+  const voteWarning = voteSummaryError || detail?.voteSummaryError || '';
   const canPost = !!meeting && meeting.status === 'open' && role !== null && role !== 'viewer';
+  const canVote = canPost && meeting?.meeting_type === 'vote' && !voteSummary.currentUserHasVoted;
 
-  async function onSubmitVote(event: React.FormEvent) {
-    event.preventDefault();
-    if (!meeting || !voteText.trim()) return;
+  async function onSubmitVote(optionText: (typeof VOTE_OPTIONS)[number]) {
+    if (!meeting) return;
     try {
       setVoteSubmitting(true);
       setError('');
-      await submitMeetingVote({ meetingId: meeting.id, optionText: voteText.trim() });
+      await submitMeetingVote({ meetingId: meeting.id, optionText });
       setMessage('投票已提交');
-      setVoteText('');
       await reload();
     } catch (e) {
-      setError(sanitizeError(e, '提交投票失败'));
+      setError(sanitizeError(e, '投票提交失败，请检查网络或权限'));
     } finally {
       setVoteSubmitting(false);
     }
@@ -259,11 +290,13 @@ export default function MeetingDetailPage() {
   return (
     <div className="min-h-screen bg-cream">
       <AppHeader title="议事详情" backHref="/family/meetings" />
-      <main className="mx-auto max-w-md px-4 py-6 space-y-4">
-        {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        {message && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
+        <main className="mx-auto max-w-md px-4 py-6 space-y-4">
+          {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+          {message && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
+          {voteWarning && <p className="rounded-xl bg-gold/10 px-3 py-2 text-xs text-gold">{voteWarning}</p>}
+          {opinionLoadError && <p className="rounded-xl bg-gold/10 px-3 py-2 text-xs text-gold">{opinionLoadError}</p>}
 
-        <section className="rounded-2xl border border-sand/70 bg-card p-4">
+          <section className="rounded-2xl border border-sand/70 bg-card p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h1 className="text-lg font-semibold text-charcoal">{meeting.title}</h1>
             <span className="rounded-full bg-pine/10 px-2.5 py-1 text-xs text-pine">
@@ -279,34 +312,47 @@ export default function MeetingDetailPage() {
 
         {meeting.meeting_type === 'vote' && voteSummary && (
           <section className="rounded-2xl border border-sand/70 bg-card p-4">
-            <h2 className="mb-2 text-sm font-semibold text-pine">投票区</h2>
-            <p className="mb-2 text-xs text-muted">已投票 {voteSummary.totalVotes} 人</p>
-            <div className="space-y-2">
-              {voteSummary.options.length === 0 ? (
-                <p className="text-sm text-muted">暂无投票记录</p>
-              ) : (
-                voteSummary.options.map((item) => (
-                  <div key={item.optionText} className="flex items-center justify-between rounded-lg bg-cream px-3 py-2 text-sm">
-                    <span>{item.optionText}</span>
-                    <span>{item.count}</span>
-                  </div>
-                ))
-              )}
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-pine">快速表态</h2>
+              <span className="text-xs text-muted">{voteSummary.totalVotes} 人已表态</span>
             </div>
-            <form onSubmit={onSubmitVote} className="mt-3 space-y-2">
-              <input
-                value={voteText}
-                onChange={(event) => setVoteText(event.target.value)}
-                placeholder="填写你的投票选项"
-                className="w-full rounded-xl border border-sand px-3 py-2 text-sm"
-              />
-              <button
-                disabled={!voteText.trim() || voteSubmitting || meeting.status !== 'open'}
-                className="w-full rounded-xl bg-pine py-2.5 text-sm font-semibold text-cream disabled:opacity-50"
-              >
-                {voteSubmitting ? '提交中...' : '提交投票'}
-              </button>
-            </form>
+
+            <div className="grid grid-cols-3 gap-2">
+              {VOTE_OPTIONS.map((option) => {
+                const count = voteCount(voteSummary, option);
+                const selected = voteSummary.currentUserOption === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => onSubmitVote(option)}
+                    disabled={!canVote || voteSubmitting}
+                    className={`rounded-xl border px-2 py-3 text-center transition-colors disabled:cursor-not-allowed ${
+                      selected
+                        ? 'border-pine bg-pine text-cream'
+                        : 'border-sand bg-cream text-charcoal hover:border-pine/40'
+                    } ${!canVote && !selected ? 'opacity-70' : ''}`}
+                  >
+                    <span className="block text-sm font-semibold">{option}</span>
+                    <span className={`mt-1 block text-xs ${selected ? 'text-cream/75' : 'text-muted'}`}>
+                      {count} 人
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 rounded-xl bg-cream px-3 py-2 text-xs text-muted">
+              {voteSummary.currentUserHasVoted
+                ? `你已选择：${voteSummary.currentUserOption}`
+                : meeting.status === 'open'
+                  ? '点一下即可完成表态，每人只能选择一次。'
+                  : '该议题已关闭，不能继续表态。'}
+            </div>
+
+            {voteSubmitting && (
+              <p className="mt-2 rounded-xl bg-gold/10 px-3 py-2 text-xs text-gold">正在提交...</p>
+            )}
           </section>
         )}
 

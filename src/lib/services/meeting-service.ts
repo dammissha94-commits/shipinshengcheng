@@ -25,6 +25,7 @@ import { throwServiceError } from './service-client';
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 const NO_PERMISSION_MESSAGE = '你暂无权限执行此操作';
 const LOGIN_REQUIRED_MESSAGE = '请先登录';
+const VOTE_OPTIONS = ['同意', '不同意', '待商量'] as const;
 
 function getClient(client?: SupabaseServiceClient): SupabaseServiceClient | null {
   if (client) return client;
@@ -43,6 +44,17 @@ async function writeActionLog(
 ): Promise<void> {
   const result = await client.from<ActionLog>('action_logs').insert(log).select('*').single();
   throwServiceError(result.error, 'write action log failed');
+}
+
+async function writeActionLogSafely(
+  client: SupabaseServiceClient,
+  log: Omit<ActionLog, 'id' | 'created_at'>
+): Promise<void> {
+  try {
+    await writeActionLog(client, log);
+  } catch {
+    // Logging must never block the primary family workflow.
+  }
 }
 
 async function getMeeting(meetingId: string, client: SupabaseServiceClient): Promise<FamilyMeeting> {
@@ -73,14 +85,16 @@ async function fetchProfile(userId: string, client: SupabaseServiceClient): Prom
 function sanitizeError(error: unknown, fallback: string): never {
   const message = error instanceof Error ? error.message : fallback;
   if (
-    message.includes('failed') ||
-    message.includes('violates') ||
-    message.includes('permission denied') ||
-    message.includes('duplicate key')
+    message.includes('Auth session missing') ||
+    message.includes('议事不存在或已不可访问') ||
+    message.includes('你已参与过本次投票') ||
+    message.includes('你已投票，不能重复提交') ||
+    message.includes('议事意见不存在或已不可访问') ||
+    message.includes('你暂无权限执行此操作')
   ) {
-    throw new Error(fallback);
+    throw new Error(message);
   }
-  throw new Error(message);
+  throw new Error(fallback);
 }
 
 function normalizeOpinionContent(content: string): string {
@@ -144,7 +158,7 @@ export async function createFamilyMeeting(
   throwServiceError(result.error, 'create family meeting failed');
   const meeting = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: input.familyId,
     actor_user_id: user.id,
     target_type: 'family_meeting',
@@ -186,7 +200,7 @@ export async function updateFamilyMeeting(
   throwServiceError(result.error, 'update family meeting failed');
   const meeting = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: existing.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting',
@@ -219,7 +233,7 @@ export async function closeFamilyMeeting(
   throwServiceError(result.error, 'close family meeting failed');
   const meeting = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: existing.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting',
@@ -252,7 +266,7 @@ export async function archiveFamilyMeeting(
   throwServiceError(result.error, 'archive family meeting failed');
   const meeting = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: existing.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting',
@@ -299,27 +313,37 @@ export async function getMeetingVoteSummary(
     };
   }
 
-  const votes = await listMeetingVotes(meetingId, resolved);
-  const user = await getCurrentUser();
-  const counts = new Map<string, number>();
-  let currentUserOption: string | null = null;
+  try {
+    const votes = await listMeetingVotes(meetingId, resolved);
+    const user = await getCurrentUser();
+    const counts = new Map<string, number>();
+    let currentUserOption: string | null = null;
 
-  for (const vote of votes) {
-    counts.set(vote.option_text, (counts.get(vote.option_text) ?? 0) + 1);
-    if (user && vote.voter_user_id === user.id) currentUserOption = vote.option_text;
+    for (const vote of votes) {
+      counts.set(vote.option_text, (counts.get(vote.option_text) ?? 0) + 1);
+      if (user && vote.voter_user_id === user.id) currentUserOption = vote.option_text;
+    }
+
+    const options = Array.from(counts.entries())
+      .map(([optionText, count]) => ({ optionText, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      meetingId,
+      totalVotes: votes.length,
+      options,
+      currentUserHasVoted: currentUserOption !== null,
+      currentUserOption,
+    };
+  } catch {
+    return {
+      meetingId,
+      totalVotes: 0,
+      options: [],
+      currentUserHasVoted: false,
+      currentUserOption: null,
+    };
   }
-
-  const options = Array.from(counts.entries())
-    .map(([optionText, count]) => ({ optionText, count }))
-    .sort((a, b) => b.count - a.count);
-
-  return {
-    meetingId,
-    totalVotes: votes.length,
-    options,
-    currentUserHasVoted: currentUserOption !== null,
-    currentUserOption,
-  };
 }
 
 export async function submitMeetingVote(
@@ -331,6 +355,9 @@ export async function submitMeetingVote(
   if (!user) throw new Error(LOGIN_REQUIRED_MESSAGE);
 
   const optionText = input.optionText.trim();
+  if (!VOTE_OPTIONS.includes(optionText as (typeof VOTE_OPTIONS)[number])) {
+    throw new Error('请选择同意、不同意或待商量');
+  }
   if (!optionText) throw new Error('请选择投票选项');
 
   const meeting = await getMeeting(input.meetingId, resolved);
@@ -345,7 +372,7 @@ export async function submitMeetingVote(
     .eq('voter_user_id', user.id);
   throwServiceError(existing.error, 'check existing meeting vote failed');
   if ((existing.data ?? []).length > 0) {
-    throw new Error('你已投票，不能重复提交');
+    throw new Error('你已参与过本次投票');
   }
 
   const result = await resolved
@@ -359,10 +386,16 @@ export async function submitMeetingVote(
     .select('*')
     .single();
 
+  if (result.error) {
+    if (/duplicate key|unique/i.test(result.error.message)) {
+      throw new Error('你已参与过本次投票');
+    }
+    throw new Error('投票提交失败，请检查网络或权限');
+  }
   throwServiceError(result.error, 'submit meeting vote failed');
   const vote = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: meeting.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting_vote',
@@ -438,7 +471,7 @@ export async function createMeetingOpinion(
   throwServiceError(result.error, 'create meeting opinion failed');
   const opinion = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: meeting.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting_opinion',
@@ -488,7 +521,7 @@ export async function updateMeetingOpinion(
   throwServiceError(result.error, 'update meeting opinion failed');
   const updated = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: opinion.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting_opinion',
@@ -521,7 +554,7 @@ export async function hideMeetingOpinion(
   throwServiceError(result.error, 'hide meeting opinion failed');
   const updated = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: opinion.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting_opinion',
@@ -554,7 +587,7 @@ export async function archiveMeetingOpinion(
   throwServiceError(result.error, 'archive meeting opinion failed');
   const updated = result.data!;
 
-  await writeActionLog(resolved, {
+  await writeActionLogSafely(resolved, {
     family_id: opinion.family_id,
     actor_user_id: user.id,
     target_type: 'family_meeting_opinion',
@@ -627,11 +660,16 @@ export async function getFamilyMeeting(
     }
 
     let voteSummary: MeetingVoteSummary | null = null;
+    let voteSummaryError: string | null = null;
     if (meeting.meeting_type === 'vote') {
-      voteSummary = await getMeetingVoteSummary(meeting.id, resolved);
+      try {
+        voteSummary = await getMeetingVoteSummary(meeting.id, resolved);
+      } catch {
+        voteSummaryError = '投票数据暂不可用，请先执行修复迁移';
+      }
     }
 
-    return { meeting, creatorDisplayName, voteSummary };
+    return { meeting, creatorDisplayName, voteSummary, voteSummaryError };
   } catch (error) {
     sanitizeError(error, '加载议事详情失败');
   }

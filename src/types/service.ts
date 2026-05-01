@@ -370,6 +370,7 @@ export interface FamilyMeetingDetail {
   meeting: FamilyMeeting;
   creatorDisplayName: string | null;
   voteSummary: MeetingVoteSummary | null;
+  voteSummaryError?: string | null;
 }
 
 export interface FamilyMeetingPermission {
@@ -449,6 +450,7 @@ export interface FamilyStatistics {
   birthdayEvents: number;
   upcomingEvents: number;
   totalOutputs: number;
+  warnings?: string[];
 }
 
 export interface FamilyCompletionScore {
@@ -456,6 +458,7 @@ export interface FamilyCompletionScore {
   completedItems: string[];
   missingItems: string[];
   nextSuggestions: string[];
+  warnings?: string[];
 }
 
 export interface RelationDistribution {
