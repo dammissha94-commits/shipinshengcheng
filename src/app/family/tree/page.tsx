@@ -12,6 +12,7 @@ import { listFamilyPersons, listPersonRelations } from '@/lib/services/person-se
 import { mapProfilesToTreePersons } from '@/lib/family-view';
 import type { FamilySpace, Person, Relation } from '@/types/domain';
 import { getRelationLabel } from '@/types/domain';
+import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import AppHeader from '@/components/AppHeader';
 import { Badge, Card, PageShell, buttonVariants } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,29 @@ const GRANDPARENT_RELS: Relation[] = [
   'grandmother_maternal',
 ];
 const PARENT_RELS: Relation[] = ['father', 'mother'];
+
+function treeRelationLabel(relation: Relation, person: Person | null): string {
+  const fallback = getRelationLabel(relation, person?.gender);
+  try {
+    if (relation === 'father' || relation === 'mother' || relation === 'spouse' || relation === 'child') {
+      return getKinshipLabel(relation, person?.gender).label;
+    }
+    if (relation === 'sibling') {
+      return normalizeRelationType('sibling_of', person?.gender) || fallback;
+    }
+    if (
+      relation === 'grandfather_paternal' ||
+      relation === 'grandmother_paternal' ||
+      relation === 'grandfather_maternal' ||
+      relation === 'grandmother_maternal'
+    ) {
+      return getKinshipLabel(relation, person?.gender).label;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function TreePage() {
   const router = useRouter();
@@ -186,7 +210,7 @@ export default function TreePage() {
 }
 
 function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
-  const label = getRelationLabel(relation, person?.gender);
+  const label = treeRelationLabel(relation, person);
 
   if (!person) {
     return (
