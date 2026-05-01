@@ -17,6 +17,7 @@ import {
   searchGraphNodes,
 } from '@/lib/genealogy/graph-utils';
 import { buildGenealogyGraphData } from '@/lib/genealogy/graph-adapter';
+import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import { cn } from '@/lib/utils';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
@@ -43,6 +44,24 @@ const RELATION_FILTERS: RelationType[] = [
   'sibling_of',
   'grandparent_of',
 ];
+
+function getGraphRelationLabel(relationType: RelationType): string {
+  const fallback = GRAPH_RELATION_FILTER_LABELS[relationType];
+
+  try {
+    if (relationType === 'child_of') {
+      return getKinshipLabel('child').label || fallback;
+    }
+
+    if (relationType === 'spouse_of') {
+      return getKinshipLabel('spouse').label || fallback;
+    }
+
+    return normalizeRelationType(relationType) || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function GenealogyGraphPage() {
   const router = useRouter();
@@ -121,7 +140,10 @@ export default function GenealogyGraphPage() {
   const visibleGraphData = useMemo<GenealogyGraphData>(
     () => ({
       nodes: graphData.nodes,
-      edges: filteredEdges,
+      edges: filteredEdges.map((edge) => ({
+        ...edge,
+        label: getGraphRelationLabel(edge.relationType) as typeof edge.label,
+      })),
     }),
     [filteredEdges, graphData.nodes]
   );
@@ -275,7 +297,7 @@ export default function GenealogyGraphPage() {
                       )}
                     >
                       {active && <Check size={12} />}
-                      {GRAPH_RELATION_FILTER_LABELS[relationType]}
+                      {getGraphRelationLabel(relationType)}
                     </button>
                   );
                 })}
@@ -374,7 +396,7 @@ export default function GenealogyGraphPage() {
                 key={relationType}
                 className={relationType === 'spouse_of' ? 'bg-gold' : 'bg-pine'}
                 dashed={relationType !== 'parent_of' && relationType !== 'child_of'}
-                label={GRAPH_RELATION_FILTER_LABELS[relationType]}
+                label={getGraphRelationLabel(relationType)}
                 muted={!relationFilters[relationType]}
               />
             ))}
