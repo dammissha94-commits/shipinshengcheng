@@ -28,6 +28,7 @@ import {
   syncPersonBirthdayEvent,
   unsyncPersonBirthdayEvent,
 } from '@/lib/services/calendar-service';
+import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import AppHeader from '@/components/AppHeader';
 
 const CLAIM_LABELS = {
@@ -53,6 +54,43 @@ const VISIBILITY_LABELS = {
   family: '家族可见',
   public: '公开',
 } as const;
+
+function relationSummaryLabel(item: PersonRelationSummary, currentPersonId: string): string {
+  try {
+    const otherGender = item.otherPerson?.gender ?? undefined;
+    const relation = item.relation;
+
+    if (relation.relation_type === 'parent_of') {
+      if (relation.from_person_id === currentPersonId) {
+        return getKinshipLabel('child', otherGender).label;
+      }
+      if (otherGender === 'male') return getKinshipLabel('father', otherGender).label;
+      if (otherGender === 'female') return getKinshipLabel('mother', otherGender).label;
+      return normalizeRelationType('parent_of');
+    }
+
+    if (relation.relation_type === 'spouse_of') {
+      return getKinshipLabel('spouse', otherGender).label;
+    }
+
+    if (relation.relation_type === 'sibling_of') {
+      return normalizeRelationType('sibling_of', otherGender);
+    }
+
+    if (relation.relation_type === 'grandparent_of') {
+      if (relation.from_person_id === currentPersonId) {
+        if (otherGender === 'male') return '孙子';
+        if (otherGender === 'female') return '孙女';
+        return '孙辈';
+      }
+      return normalizeRelationType('grandparent_of', otherGender);
+    }
+
+    return normalizeRelationType(relation.relation_type, otherGender) || item.label;
+  } catch {
+    return item.label;
+  }
+}
 
 export default function MemberDetailPage() {
   const params = useParams<{ id: string }>();
@@ -346,7 +384,7 @@ export default function MemberDetailPage() {
                 <div className="space-y-2">
                   {relations.map((item) => (
                     <div key={item.relation.id} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-charcoal">{item.label}</span>
+                      <span className="text-charcoal">{relationSummaryLabel(item, person.id)}</span>
                       <span className="text-muted truncate">{item.otherPerson?.display_name ?? '未知成员'}</span>
                     </div>
                   ))}
