@@ -92,13 +92,16 @@ async function loadStatisticsSourceData(
   throwServiceError(eventsResult.error, 'load statistics events failed');
   throwServiceError(outputsResult.error, 'load statistics outputs failed');
 
+  const meetings = (meetingsResult.data ?? []).filter((meeting) => meeting.status !== 'archived');
+  const activeMeetingIds = new Set(meetings.map((m) => m.id));
+
   return {
     persons: personsResult.data ?? [],
     relations: (relationsResult.data ?? []).filter((relation) => relation.status === 'active'),
     stories: (storiesResult.data ?? []).filter((story) => story.status === 'active'),
     photos: (photosResult.data ?? []).filter((photo) => photo.status === 'active'),
-    meetings: (meetingsResult.data ?? []).filter((meeting) => meeting.status !== 'archived'),
-    votes: votesResult.data ?? [],
+    meetings,
+    votes: (votesResult.data ?? []).filter((vote) => activeMeetingIds.has(vote.meeting_id)),
     opinions: (opinionsResult.data ?? []).filter((opinion) => opinion.status === 'active'),
     events: (eventsResult.data ?? []).filter((event) => event.status === 'active'),
     outputs: (outputsResult.data ?? []).filter((output) => output.status !== 'archived'),
