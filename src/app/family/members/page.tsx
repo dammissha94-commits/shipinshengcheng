@@ -12,6 +12,7 @@ import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import { listFamilyMembers, listFamilyMemberships, relationLabel } from '@/lib/services/member-service';
 import { listPersonRelations } from '@/lib/services/person-service';
+import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import AppHeader from '@/components/AppHeader';
 import { Badge, Card, PageShell, buttonVariants } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -141,15 +142,34 @@ export default function FamilyMembersPage() {
     );
 
     if (!connected || !selfPerson) return '家人档案';
-    if (connected.relation_type === 'parent_of') {
-      return connected.to_person_id === selfPerson.id ? '父母' : '子女';
+    try {
+      const fallback = relationLabel(connected, selfPerson.id);
+      if (connected.relation_type === 'parent_of') {
+        if (connected.to_person_id === selfPerson.id) {
+          if (person.gender === 'male') return getKinshipLabel('father', person.gender).label;
+          if (person.gender === 'female') return getKinshipLabel('mother', person.gender).label;
+          return normalizeRelationType('parent_of') || fallback;
+        }
+        return getKinshipLabel('child', person.gender ?? undefined).label;
+      }
+      if (connected.relation_type === 'spouse_of') {
+        return getKinshipLabel('spouse', person.gender ?? undefined).label;
+      }
+      if (connected.relation_type === 'sibling_of') {
+        return normalizeRelationType('sibling_of', person.gender ?? undefined) || fallback;
+      }
+      if (connected.relation_type === 'grandparent_of') {
+        if (connected.to_person_id === selfPerson.id) {
+          return normalizeRelationType('grandparent_of', person.gender ?? undefined) || fallback;
+        }
+        if (person.gender === 'male') return '孙子';
+        if (person.gender === 'female') return '孙女';
+        return '孙辈';
+      }
+      return normalizeRelationType(connected.relation_type, person.gender ?? undefined) || fallback;
+    } catch {
+      return relationLabel(connected, selfPerson.id);
     }
-    if (connected.relation_type === 'spouse_of') return '配偶';
-    if (connected.relation_type === 'sibling_of') return '兄弟姐妹';
-    if (connected.relation_type === 'grandparent_of') {
-      return connected.to_person_id === selfPerson.id ? '祖辈' : '孙辈';
-    }
-    return relationLabel(connected, selfPerson.id);
   }
 
   return (
