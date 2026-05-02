@@ -123,7 +123,9 @@ export default function ActivityPage() {
                 const { label, category } = getActivityLabel(log.action_type);
                 const { badgeVariant, linkPrefix } = getActivityCategoryMeta(category);
                 const summary = getActivitySummary(log);
-                const detailHref = linkPrefix && log.target_id
+                // Only append target_id for modules that have detail pages
+                const hasDetailPage = category === 'member' || category === 'meeting' || category === 'calendar';
+                const detailHref = linkPrefix && log.target_id && hasDetailPage
                   ? `${linkPrefix}/${log.target_id}`
                   : linkPrefix || null;
 

@@ -108,11 +108,16 @@ export function getActivitySummary(log: ActionLog): string {
   if (action === 'submit_meeting_vote') return '参与了议事投票';
   if (action === 'create_meeting_opinion') return '发表了议事意见';
   if (action === 'update_meeting_opinion') return '修改了议事意见';
+  if (action === 'hide_meeting_opinion') return '隐藏了议事意见';
+  if (action === 'archive_meeting_opinion') return '归档了议事意见';
   if (action === 'create_family_calendar_event') return '添加了家庭节点';
   if (action === 'update_family_calendar_event') return '更新了家庭节点';
   if (action === 'archive_family_calendar_event') return '归档了家庭节点';
   if (action === 'create_person_birthday_event') return '同步了生日提醒';
+  if (action === 'update_person_birthday_event') return '更新了生日提醒';
+  if (action === 'archive_person_birthday_event') return '归档了生日提醒';
   if (action === 'create_family_output') return '生成了新的成果物';
+  if (action === 'update_family_output') return '更新了成果物';
   if (action === 'archive_family_output') return '归档了成果物';
   if (action === 'create_family_space') return '创建了数字家堂';
   if (action === 'update_family_space') return '更新了家堂设置';
