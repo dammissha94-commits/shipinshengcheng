@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/auth-service';
-import { canCreateFamilyOutput, isFamilyMember } from '@/lib/auth/permission-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
@@ -13,6 +12,7 @@ import {
   generateFamilyStoryBookPreview,
   generateFamilyYearbookPreview,
   generateThreeGenerationTreePreview,
+  getOutputPageViewData,
   listFamilyOutputs,
 } from '@/lib/services/output-service';
 import type { FamilyOutput, FamilyOutputType, Visibility } from '@/types/domain';
@@ -147,17 +147,7 @@ export default function OutputPage() {
           return;
         }
 
-        const member = await isFamilyMember(currentFamily.id);
-        if (!member) {
-          setError('你暂无权限执行此操作');
-          setLoading(false);
-          return;
-        }
-
-        const [records, allowed] = await Promise.all([
-          listFamilyOutputs(currentFamily.id),
-          canCreateFamilyOutput(currentFamily.id),
-        ]);
+        const { outputs: records, canCreate: allowed } = await getOutputPageViewData(currentFamily.id);
         setFamily(currentFamily);
         setOutputs(records);
         setCanGenerate(allowed);

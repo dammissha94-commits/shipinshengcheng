@@ -106,6 +106,28 @@ function recentPhotos(photos: FamilyPhoto[]) {
   }));
 }
 
+export async function getOutputPageViewData(familyId: string): Promise<{
+  outputs: FamilyOutput[];
+  canCreate: boolean;
+}> {
+  const role = await getUserFamilyRole(familyId);
+  if (!role) throw new Error('你暂无权限执行此操作');
+
+  const client = createSupabaseServiceClient();
+  const result = await client
+    .from<FamilyOutput>('family_outputs')
+    .select('*')
+    .eq('family_id', familyId)
+    .order('created_at', { ascending: false });
+
+  throwServiceError(result.error, 'list family outputs failed');
+
+  return {
+    outputs: result.data ?? [],
+    canCreate: role === 'owner' || role === 'family_admin' || role === 'memory_admin',
+  };
+}
+
 export async function listFamilyOutputs(
   familyId: string,
   client?: SupabaseServiceClient
@@ -152,14 +174,14 @@ export async function createFamilyOutput(
 
   throwServiceError(result.error, 'create family output failed');
 
-  await writeActionLog(resolvedClient, {
+  writeActionLog(resolvedClient, {
     family_id: input.familyId,
     actor_user_id: user.id,
     target_type: 'family_output',
     target_id: result.data!.id,
     action_type: 'create_family_output',
     metadata: { output_type: input.outputType },
-  });
+  }).catch(() => {});
 
   return result.data!;
 }

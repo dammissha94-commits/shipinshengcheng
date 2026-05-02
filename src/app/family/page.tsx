@@ -79,32 +79,32 @@ function RecentFamilyNodeCard({ summary }: { summary: FamilyReminderSummary | nu
 
   return (
     <div className="mb-6">
-      <SectionTitle title="近期家庭节点" rightElement={<Link href="/family/reminders" className="text-sm text-gold">查看全部提醒</Link>} />
-      <div className="rounded-2xl border border-sand/60 bg-card p-4 shadow-sm">
-        <div className="mb-3 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-pine/10 px-3 py-2">
-            <p className="text-xs text-muted">今日提醒</p>
-            <p className="mt-1 text-lg font-bold text-pine">{summary?.todayCount ?? 0}</p>
+      <SectionTitle title="近期家庭节点" rightElement={<Link href="/family/reminders" className="text-[14px] text-gold">查看全部</Link>} />
+      <div className="rounded-2xl border border-sand/60 bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-pine/8 px-3 py-2.5">
+            <p className="text-[12px] text-muted">今日提醒</p>
+            <p className="mt-1 text-xl font-bold text-pine">{summary?.todayCount ?? 0}</p>
           </div>
-          <div className="rounded-xl bg-gold/10 px-3 py-2">
-            <p className="text-xs text-muted">本周提醒</p>
-            <p className="mt-1 text-lg font-bold text-gold">{summary?.weekCount ?? 0}</p>
+          <div className="rounded-xl bg-gold/8 px-3 py-2.5">
+            <p className="text-[12px] text-muted">本周提醒</p>
+            <p className="mt-1 text-xl font-bold text-gold">{summary?.weekCount ?? 0}</p>
           </div>
         </div>
 
         {upcoming.length === 0 ? (
-          <p className="rounded-xl bg-cream px-3 py-3 text-sm text-muted">近期暂无家庭节点提醒</p>
+          <p className="rounded-xl bg-cream/60 px-4 py-4 text-[14px] text-muted text-center">近期暂无家庭节点提醒</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {upcoming.map((item) => <RecentFamilyNodeItem key={item.event.id} item={item} />)}
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Link href="/family/reminders" className="rounded-xl bg-pine px-3 py-2.5 text-center text-sm font-semibold text-cream">
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <Link href="/family/reminders" className="rounded-xl bg-pine px-3 py-2.5 text-center text-[14px] font-semibold text-cream transition-colors hover:bg-pine-light active:scale-[0.98]">
             查看全部提醒
           </Link>
-          <Link href="/family/calendar" className="rounded-xl border border-pine px-3 py-2.5 text-center text-sm font-semibold text-pine">
+          <Link href="/family/calendar" className="rounded-xl border border-pine/40 bg-card px-3 py-2.5 text-center text-[14px] font-semibold text-pine transition-colors hover:bg-pine/5 active:scale-[0.98]">
             打开家族日历
           </Link>
         </div>
@@ -239,29 +239,29 @@ export default function FamilyPage() {
 
   return (
     <div className="min-h-screen bg-cream pb-safe">
-      <div className="bg-pine px-4 pt-12 pb-8 text-cream">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-cream/50 tracking-widest">我的数字家堂</div>
-          <button onClick={handleSignOut} className="text-xs text-cream/60">退出</button>
+      <div className="bg-pine px-5 pt-14 pb-9 text-cream">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[12px] text-cream/45 tracking-[0.12em] font-medium">我的数字家堂</div>
+          <button onClick={handleSignOut} className="text-[12px] text-cream/50 hover:text-cream/80 transition-colors">退出</button>
         </div>
-        <h1 className="text-2xl font-bold tracking-wide mb-1">{family.displayName}</h1>
-        <p className="text-sm text-cream/60">{selfPerson?.name ?? '家人'} · {profiles.length} 位成员</p>
+        <h1 className="text-[26px] font-bold tracking-[0.03em] mb-1.5">{family.displayName}</h1>
+        <p className="text-[14px] text-cream/55">{selfPerson?.name ?? '家人'} · {profiles.length} 位成员</p>
       </div>
 
-      <div className="px-4 max-w-md mx-auto">
-        <div className="mb-5 -mt-4">
+      <div className="px-4 max-w-lg mx-auto">
+        <div className="mb-6 -mt-4">
           <ProgressCard memberCount={profiles.length} completion={completion} />
         </div>
 
         {nextAction && (
-          <Link href={nextAction.href} className="block mb-5">
-            <div className="bg-gold/10 border border-gold/30 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gold/20 flex items-center justify-center text-gold shrink-0">!</div>
+          <Link href={nextAction.href} className="block mb-6">
+            <div className="bg-gold/5 border border-gold/25 rounded-2xl p-4 flex items-center gap-3.5 transition-all duration-200 hover:border-gold/40 hover:bg-gold/8 active:scale-[0.99]">
+              <div className="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center text-gold shrink-0 text-[15px] font-semibold">!</div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-charcoal">建议下一步：{nextAction.label}</p>
-                <p className="text-xs text-muted">{nextAction.desc}</p>
+                <p className="text-[15px] font-semibold text-charcoal">建议下一步：{nextAction.label}</p>
+                <p className="text-[13px] text-muted mt-0.5">{nextAction.desc}</p>
               </div>
-              <span className="text-gold shrink-0">›</span>
+              <span className="text-gold/60 shrink-0 text-lg">›</span>
             </div>
           </Link>
         )}
@@ -274,31 +274,31 @@ export default function FamilyPage() {
         <RecentFamilyNodeCard summary={reminderSummary} />
 
         <div className="mb-6">
-          <SectionTitle title="三代谱预览" rightElement={<Link href="/family/tree" className="text-sm text-gold">查看详情</Link>} />
+          <SectionTitle title="三代谱预览" rightElement={<Link href="/family/tree" className="text-[14px] text-gold">查看详情</Link>} />
           <Link href="/family/tree">
-            <div className="bg-card rounded-2xl border border-sand/60 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div className="bg-card rounded-2xl border border-sand/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
               <div className="flex items-center gap-3 mb-2.5">
-                <span className="text-xs text-muted w-8 shrink-0">祖辈</span>
+                <span className="text-[13px] text-muted w-8 shrink-0">祖辈</span>
                 <div className="flex gap-1.5">{GRANDPARENT_RELS.map((rel) => <PersonDot key={rel} relation={rel} persons={persons} />)}</div>
               </div>
-              <div className="ml-11 w-px h-3 bg-sand" />
+              <div className="ml-[46px] w-px h-3 bg-sand/80" />
               <div className="flex items-center gap-3 mb-2.5">
-                <span className="text-xs text-muted w-8 shrink-0">父辈</span>
+                <span className="text-[13px] text-muted w-8 shrink-0">父辈</span>
                 <div className="flex gap-1.5">{PARENT_RELS.map((rel) => <PersonDot key={rel} relation={rel} persons={persons} />)}</div>
               </div>
-              <div className="ml-11 w-px h-3 bg-sand" />
+              <div className="ml-[46px] w-px h-3 bg-sand/80" />
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted w-8 shrink-0">本辈</span>
+                <span className="text-[13px] text-muted w-8 shrink-0">本辈</span>
                 <div className="flex gap-1.5">
-                  <div className="w-7 h-7 rounded-full bg-pine flex items-center justify-center text-[10px] text-cream font-bold ring-2 ring-gold/60 ring-offset-1 ring-offset-card">
+                  <div className="w-7 h-7 rounded-full bg-pine flex items-center justify-center text-[10px] text-cream font-bold ring-2 ring-gold/50 ring-offset-2 ring-offset-card">
                     {(selfPerson?.name ?? '我').charAt(0)}
                   </div>
-                  {spouse && <div className="w-7 h-7 rounded-full bg-pine text-cream flex items-center justify-center text-[10px] font-medium">{spouse.name.charAt(0)}</div>}
+                  {spouse && <div className="w-7 h-7 rounded-full bg-pine/80 text-cream flex items-center justify-center text-[10px] font-medium">{spouse.name.charAt(0)}</div>}
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-sand/60 flex items-center justify-between">
-                <span className="text-xs text-muted">{profiles.length} 位成员{unclaimedCount > 0 && <span className="ml-1.5 text-gold">· {unclaimedCount} 待认领</span>}</span>
-                <span className="text-xs text-gold">查看完整家谱 →</span>
+              <div className="mt-4 pt-3 border-t border-sand/60 flex items-center justify-between">
+                <span className="text-[13px] text-muted">{profiles.length} 位成员{unclaimedCount > 0 && <span className="ml-1.5 text-gold font-medium">· {unclaimedCount} 待认领</span>}</span>
+                <span className="text-[13px] text-gold font-medium">查看完整家谱 →</span>
               </div>
             </div>
           </Link>

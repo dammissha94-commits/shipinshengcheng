@@ -119,6 +119,11 @@ export default function FamilyMembersPage() {
     [currentUserId, people]
   );
 
+  const membershipByUserId = useMemo(
+    () => new Map(memberships.map((m) => [m.user_id, m])),
+    [memberships]
+  );
+
   const filteredPeople = useMemo(() => {
     return people.filter((person) => {
       if (filter === 'claimed') return person.claim_status === 'claimed';
@@ -141,7 +146,7 @@ export default function FamilyMembersPage() {
         (relation.to_person_id === person.id && relation.from_person_id === selfPerson?.id)
     );
 
-    if (!connected || !selfPerson) return '家人档案';
+    if (!connected || !selfPerson) return '家人';
     try {
       const fallback = relationLabel(connected, selfPerson.id);
       if (connected.relation_type === 'parent_of') {
@@ -246,7 +251,7 @@ export default function FamilyMembersPage() {
           <div className="space-y-3">
             {filteredPeople.map((person) => {
               const membership = person.bound_user_id
-                ? memberships.find((item) => item.user_id === person.bound_user_id) ?? null
+                ? (membershipByUserId.get(person.bound_user_id) ?? null)
                 : null;
 
               return (

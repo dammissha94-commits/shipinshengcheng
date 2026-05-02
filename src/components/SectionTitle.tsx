@@ -10,10 +10,13 @@ export default function SectionTitle({ title, subtitle, rightElement }: SectionT
   return (
     <div className="mb-3 flex items-end justify-between gap-3">
       <div className="min-w-0">
-        <h2 className="truncate text-base font-semibold tracking-wide text-charcoal">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-muted">{subtitle}</p>}
+        <div className="flex items-center gap-2.5">
+          <div className="h-4 w-[3px] rounded-full bg-gold/60" />
+          <h2 className="truncate text-[16px] font-semibold tracking-[0.03em] text-charcoal">{title}</h2>
+        </div>
+        {subtitle && <p className="mt-1 ml-[15px] text-[13px] leading-relaxed text-muted">{subtitle}</p>}
       </div>
-      {rightElement && <div className="shrink-0 text-sm font-medium text-gold">{rightElement}</div>}
+      {rightElement && <div className="shrink-0 text-[14px] font-medium text-gold">{rightElement}</div>}
     </div>
   );
 }

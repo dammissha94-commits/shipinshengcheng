@@ -13,6 +13,7 @@ import { createFamilyMeeting, listFamilyMeetings } from '@/lib/services/meeting-
 import type { FamilyMeeting, FamilyRole, FamilySpace, MeetingType, Visibility } from '@/types/domain';
 import AppHeader from '@/components/AppHeader';
 import SectionTitle from '@/components/SectionTitle';
+import { Card, Input } from '@/components/ui';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 const NO_PERMISSION_MESSAGE = '你暂无权限执行此操作';
@@ -68,27 +69,21 @@ function meetingStatusLabel(status: FamilyMeeting['status']): string {
 
 function MeetingCard({ meeting }: { meeting: FamilyMeeting }) {
   return (
-    <article className="rounded-2xl border border-sand/70 bg-card p-4 shadow-sm">
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <h3 className="min-w-0 flex-1 text-base font-semibold text-charcoal">{meeting.title}</h3>
-        <span className="rounded-full bg-pine/10 px-2.5 py-1 text-xs font-medium text-pine">
-          {MEETING_TYPE_LABELS[meeting.meeting_type]}
-        </span>
-      </div>
-      <p className="line-clamp-3 text-sm text-muted">{meeting.content?.trim() || '暂无内容'}</p>
-      <div className="mt-3 flex items-center justify-between text-xs text-muted/80">
-        <span>{formatDate(meeting.event_date)}</span>
-        <span>{meetingStatusLabel(meeting.status)}</span>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-muted">
-          {meeting.meeting_type === 'vote' ? '含投票面板与议事意见区' : '含议事意见区'}
-        </span>
-        <Link href={`/family/meetings/${meeting.id}`} className="text-xs font-semibold text-pine">
-          查看详情
-        </Link>
-      </div>
-    </article>
+    <Link href={`/family/meetings/${meeting.id}`} className="block">
+      <article className="rounded-2xl border border-sand/60 bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:shadow-md">
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <h3 className="min-w-0 flex-1 text-[16px] font-semibold text-charcoal">{meeting.title}</h3>
+          <span className="shrink-0 rounded-full bg-pine/10 px-2.5 py-0.5 text-[11px] font-medium text-pine">
+            {MEETING_TYPE_LABELS[meeting.meeting_type]}
+          </span>
+        </div>
+        <p className="line-clamp-3 text-[14px] leading-relaxed text-muted">{meeting.content?.trim() || '暂无内容'}</p>
+        <div className="mt-3 flex items-center justify-between text-[12px] text-muted/70">
+          <span>{formatDate(meeting.event_date)}</span>
+          <span>{meetingStatusLabel(meeting.status)}</span>
+        </div>
+      </article>
+    </Link>
   );
 }
 
@@ -233,57 +228,61 @@ export default function MeetingsPage() {
         )}
 
         {showForm && canCreateMeeting && (
-          <form onSubmit={handleSubmit} className="mb-5 space-y-3 rounded-2xl border border-pine/20 bg-card p-4 shadow-sm">
-            <p className="text-sm font-semibold text-pine">发布一条家族议题</p>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-charcoal">类型</span>
-              <select
-                value={form.meetingType}
-                onChange={(event) => setForm({ ...form, meetingType: event.target.value as MeetingType })}
-                className="w-full rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
-              >
-                {TYPE_FILTERS.filter((item) => item.value !== 'all').map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Field label="标题" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-charcoal">内容</span>
-              <textarea
-                value={form.content}
-                onChange={(event) => setForm({ ...form, content: event.target.value })}
-                rows={4}
-                className="w-full resize-none rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
-              />
-            </label>
-            <Field
-              label="日期"
-              type="date"
-              value={form.eventDate}
-              onChange={(value) => setForm({ ...form, eventDate: value })}
-            />
-            <VisibilitySelect
-              value={form.visibility}
-              onChange={(value) => setForm({ ...form, visibility: value })}
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 rounded-xl border-2 border-sand py-2.5 text-sm font-medium text-muted"
-              >
-                取消
-              </button>
-              <button
-                disabled={!form.title.trim() || submitting}
-                className="flex-1 rounded-xl bg-pine py-2.5 text-sm font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? '发布中...' : '发布'}
-              </button>
-            </div>
+          <form onSubmit={handleSubmit} className="mb-5 space-y-3">
+            <Card className="border-pine/20 p-4">
+              <p className="mb-3 text-[15px] font-semibold text-pine">发布一条家族议题</p>
+              <div className="space-y-3">
+                <label className="block">
+                  <span className="mb-1.5 block text-[14px] font-medium text-charcoal">类型</span>
+                  <select
+                    value={form.meetingType}
+                    onChange={(event) => setForm({ ...form, meetingType: event.target.value as MeetingType })}
+                    className="w-full rounded-xl border-2 border-sand bg-card px-4 py-3 text-[15px] text-charcoal transition-all duration-200 focus:border-pine focus:outline-none focus:shadow-[0_0_0_3px_rgba(30,58,47,0.08)]"
+                  >
+                    {TYPE_FILTERS.filter((item) => item.value !== 'all').map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Field label="标题" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
+                <label className="block">
+                  <span className="mb-1.5 block text-[14px] font-medium text-charcoal">内容</span>
+                  <textarea
+                    value={form.content}
+                    onChange={(event) => setForm({ ...form, content: event.target.value })}
+                    rows={4}
+                    className="w-full resize-none rounded-xl border-2 border-sand bg-card px-4 py-3 text-[15px] text-charcoal placeholder:text-muted/50 transition-all duration-200 focus:border-pine focus:outline-none focus:shadow-[0_0_0_3px_rgba(30,58,47,0.08)]"
+                  />
+                </label>
+                <Field
+                  label="日期"
+                  type="date"
+                  value={form.eventDate}
+                  onChange={(value) => setForm({ ...form, eventDate: value })}
+                />
+                <VisibilitySelect
+                  value={form.visibility}
+                  onChange={(value) => setForm({ ...form, visibility: value })}
+                />
+                <div className="flex gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="flex-1 rounded-xl border-2 border-sand bg-card py-2.5 text-[15px] font-medium text-muted transition-colors hover:bg-sand/30 active:scale-[0.98]"
+                  >
+                    取消
+                  </button>
+                  <button
+                    disabled={!form.title.trim() || submitting}
+                    className="flex-1 rounded-xl bg-pine py-2.5 text-[15px] font-semibold text-cream shadow-[0_1px_3px_rgba(0,0,0,0.15)] transition-all duration-200 hover:bg-pine-light disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {submitting ? '发布中...' : '发布'}
+                  </button>
+                </div>
+              </div>
+            </Card>
           </form>
         )}
 
@@ -351,13 +350,12 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-charcoal">{label}</span>
-      <input
+      <span className="mb-1.5 block text-[14px] font-medium text-charcoal">{label}</span>
+      <Input
         type={type}
         required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
       />
     </label>
   );
@@ -366,11 +364,11 @@ function Field({
 function VisibilitySelect({ value, onChange }: { value: Visibility; onChange: (value: Visibility) => void }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-charcoal">可见范围</span>
+      <span className="mb-1.5 block text-[14px] font-medium text-charcoal">可见范围</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as Visibility)}
-        className="w-full rounded-xl border-2 border-sand bg-cream px-3 py-2.5 text-sm focus:border-pine focus:outline-none"
+        className="w-full rounded-xl border-2 border-sand bg-card px-4 py-3 text-[15px] text-charcoal transition-all duration-200 focus:border-pine focus:outline-none focus:shadow-[0_0_0_3px_rgba(30,58,47,0.08)]"
       >
         {VISIBILITY_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
