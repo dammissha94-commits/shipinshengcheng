@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MailPlus, UserPlus, Users } from 'lucide-react';
+import { MailPlus, Search, UserPlus, Users } from 'lucide-react';
 import type { FamilyMembership, FamilySpace, PersonProfile, PersonRelation } from '@/types/domain';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
@@ -14,8 +14,8 @@ import { listFamilyMembers, listFamilyMemberships, relationLabel } from '@/lib/s
 import { listPersonRelations } from '@/lib/services/person-service';
 import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import AppHeader from '@/components/AppHeader';
-import { Badge, Card, PageShell, buttonVariants } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import StatusBadge from '@/components/wujia/StatusBadge';
+import EmptyState from '@/components/wujia/EmptyState';
 
 type Filter = 'all' | 'claimed' | 'unclaimed' | 'alive' | 'deceased';
 
@@ -27,31 +27,25 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'deceased', label: '已故' },
 ];
 
-const CLAIM_LABELS = {
+const CLAIM_LABELS: Record<string, string> = {
   claimed: '已认领',
   unclaimed: '待认领',
   disputed: '有争议',
-} as const;
+};
 
-const LIVING_LABELS = {
-  alive: '在世',
-  deceased: '已故',
-  unknown: '未知',
-} as const;
-
-const GENDER_LABELS = {
+const GENDER_LABELS: Record<string, string> = {
   male: '男',
   female: '女',
   unknown: '未知',
-} as const;
+};
 
-const ROLE_LABELS = {
+const ROLE_LABELS: Record<string, string> = {
   owner: '创建者',
-  family_admin: '家堂管理员',
+  family_admin: '管理员',
   memory_admin: '记忆管理员',
   member: '成员',
   viewer: '访客',
-} as const;
+};
 
 export default function FamilyMembersPage() {
   const router = useRouter();
@@ -61,6 +55,7 @@ export default function FamilyMembersPage() {
   const [relations, setRelations] = useState<PersonRelation[]>([]);
   const [currentUserId, setCurrentUserId] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [search, setSearch] = useState('');
   const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,19 +67,11 @@ export default function FamilyMembersPage() {
         setLoading(false);
         return;
       }
-
       try {
         const user = await getCurrentUser();
-        if (!user) {
-          router.replace(currentLoginRedirectPath());
-          return;
-        }
-
+        if (!user) { router.replace(currentLoginRedirectPath()); return; }
         const currentFamily = await getCurrentFamilySpace(undefined, user);
-        if (!currentFamily) {
-          router.replace('/create');
-          return;
-        }
+        if (!currentFamily) { router.replace('/create'); return; }
 
         const [familyPeople, familyMemberships, familyRelations, allowed] = await Promise.all([
           listFamilyMembers(currentFamily.id),
@@ -92,7 +79,6 @@ export default function FamilyMembersPage() {
           listPersonRelations(currentFamily.id),
           canManageFamily(currentFamily.id),
         ]);
-
         setCurrentUserId(user.id);
         setFamily(currentFamily);
         setPeople(familyPeople);
@@ -105,17 +91,12 @@ export default function FamilyMembersPage() {
         setLoading(false);
       }
     }
-
     load();
   }, [router]);
 
   const selfPerson = useMemo(
-    () =>
-      people.find(
-        (person) => person.bound_user_id === currentUserId && person.claim_status === 'claimed'
-      ) ??
-      people.find((person) => person.bound_user_id === currentUserId) ??
-      null,
+    () => people.find((p) => p.bound_user_id === currentUserId && p.claim_status === 'claimed')
+      ?? people.find((p) => p.bound_user_id === currentUserId) ?? null,
     [currentUserId, people]
   );
 
@@ -125,175 +106,194 @@ export default function FamilyMembersPage() {
   );
 
   const filteredPeople = useMemo(() => {
-    return people.filter((person) => {
-      if (filter === 'claimed') return person.claim_status === 'claimed';
-      if (filter === 'unclaimed') return person.claim_status === 'unclaimed';
-      if (filter === 'alive') return person.living_status === 'alive';
-      if (filter === 'deceased') return person.living_status === 'deceased';
-      return true;
-    });
-  }, [filter, people]);
+    let result = people;
+    if (filter === 'claimed') result = result.filter((p) => p.claim_status === 'claimed');
+    else if (filter === 'unclaimed') result = result.filter((p) => p.claim_status === 'unclaimed');
+    else if (filter === 'alive') result = result.filter((p) => p.living_status === 'alive');
+    else if (filter === 'deceased') result = result.filter((p) => p.living_status === 'deceased');
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((p) => p.display_name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [filter, search, people]);
 
   if (loading) return <CenteredText text="加载中..." />;
   if (error || !family) return <CenteredText text={error || '请先创建数字家堂'} />;
 
+  const claimedCount = people.filter((p) => p.claim_status === 'claimed').length;
+  const unclaimedCount = people.filter((p) => p.claim_status === 'unclaimed').length;
+
   function getRelationSummary(person: PersonProfile): string {
     if (selfPerson && person.id === selfPerson.id) return '本人';
-
     const connected = relations.find(
-      (relation) =>
-        (relation.from_person_id === person.id && relation.to_person_id === selfPerson?.id) ||
-        (relation.to_person_id === person.id && relation.from_person_id === selfPerson?.id)
+      (r) => (r.from_person_id === person.id && r.to_person_id === selfPerson?.id)
+        || (r.to_person_id === person.id && r.from_person_id === selfPerson?.id)
     );
-
     if (!connected || !selfPerson) return '家人';
     try {
       const fallback = relationLabel(connected, selfPerson.id);
       if (connected.relation_type === 'parent_of') {
         if (connected.to_person_id === selfPerson.id) {
-          if (person.gender === 'male') return getKinshipLabel('father', person.gender).label;
-          if (person.gender === 'female') return getKinshipLabel('mother', person.gender).label;
-          return normalizeRelationType('parent_of') || fallback;
+          return person.gender === 'male' ? getKinshipLabel('father', person.gender).label
+            : person.gender === 'female' ? getKinshipLabel('mother', person.gender).label
+            : normalizeRelationType('parent_of') || fallback;
         }
         return getKinshipLabel('child', person.gender ?? undefined).label;
       }
-      if (connected.relation_type === 'spouse_of') {
-        return getKinshipLabel('spouse', person.gender ?? undefined).label;
-      }
-      if (connected.relation_type === 'sibling_of') {
-        return normalizeRelationType('sibling_of', person.gender ?? undefined) || fallback;
-      }
+      if (connected.relation_type === 'spouse_of') return getKinshipLabel('spouse', person.gender ?? undefined).label;
+      if (connected.relation_type === 'sibling_of') return normalizeRelationType('sibling_of', person.gender ?? undefined) || fallback;
       if (connected.relation_type === 'grandparent_of') {
-        if (connected.to_person_id === selfPerson.id) {
-          return normalizeRelationType('grandparent_of', person.gender ?? undefined) || fallback;
-        }
-        if (person.gender === 'male') return '孙子';
-        if (person.gender === 'female') return '孙女';
-        return '孙辈';
+        if (connected.to_person_id === selfPerson.id) return normalizeRelationType('grandparent_of', person.gender ?? undefined) || fallback;
+        return person.gender === 'male' ? '孙子' : person.gender === 'female' ? '孙女' : '孙辈';
       }
       return normalizeRelationType(connected.relation_type, person.gender ?? undefined) || fallback;
-    } catch {
-      return relationLabel(connected, selfPerson.id);
-    }
+    } catch { return relationLabel(connected, selfPerson.id); }
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <AppHeader title="家人成员" backHref="/family" />
+    <div className="min-h-screen bg-stone-50">
+      <AppHeader title="家人" backHref="/family" />
 
-      <PageShell className="min-h-0" contentClassName="space-y-5">
-        <Card className="overflow-hidden border-pine/10 bg-pine text-cream">
-          <div className="p-5">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="mb-1 text-xs tracking-wider text-cream/60">数字家堂</p>
-                <h1 className="truncate text-xl font-bold">{family.displayName}</h1>
-                <p className="mt-1 text-sm text-cream/70">{people.length} 份家人档案</p>
-              </div>
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cream/10">
-                <Users size={22} />
-              </div>
+      <div className="px-4 py-6 max-w-3xl mx-auto space-y-5">
+        {/* Header stats */}
+        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs text-white/40 tracking-widest font-medium">数字家堂</p>
+              <h1 className="mt-0.5 text-xl font-bold">{family.displayName}</h1>
             </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <Stat label="已认领" value={people.filter((item) => item.claim_status === 'claimed').length} />
-              <Stat label="待认领" value={people.filter((item) => item.claim_status === 'unclaimed').length} />
-              <Stat label="在世" value={people.filter((item) => item.living_status === 'alive').length} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
+              <Users size={22} />
             </div>
           </div>
-        </Card>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label="已认领" value={claimedCount} />
+            <Stat label="待认领" value={unclaimedCount} />
+            <Stat label="总成员" value={people.length} />
+          </div>
+        </div>
 
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {/* Search & actions */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索姓名..."
+              className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+            />
+          </div>
+          {canManage && (
+            <Link
+              href="/family/relatives/new"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-950 text-white transition-colors hover:bg-emerald-900 active:scale-95"
+              aria-label="添加亲属"
+            >
+              <UserPlus size={18} strokeWidth={2} />
+            </Link>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 overflow-x-auto">
           {FILTERS.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => setFilter(item.value)}
-              className={cn(
-                'shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                 filter === item.value
-                  ? 'bg-pine text-cream'
-                  : 'border border-sand bg-card text-muted hover:border-gold/40 hover:text-charcoal'
-              )}
+                  ? 'bg-emerald-950 text-white'
+                  : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700'
+              }`}
             >
               {item.label}
             </button>
           ))}
         </div>
 
-        {canManage && (
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/family/relatives/new" className={cn(buttonVariants({ fullWidth: true }), 'gap-2')}>
-              <UserPlus size={16} />
-              添加亲属
-            </Link>
-            <Link
-              href="/family/invite"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-pine/70 bg-card px-4 text-sm font-semibold text-pine transition-colors hover:bg-pine/5 active:scale-[0.98]"
-            >
-              <MailPlus size={16} />
-              邀请认领
-            </Link>
-          </div>
+        {/* Invite CTA */}
+        {canManage && unclaimedCount > 0 && (
+          <Link
+            href="/family/invite"
+            className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 transition-all hover:border-amber-300 active:scale-[0.99]"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <MailPlus size={18} strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-stone-800">邀请 {unclaimedCount} 位家人认领档案</p>
+              <p className="text-xs text-stone-500">让家人自己完善个人资料</p>
+            </div>
+            <span className="text-amber-600 text-lg">&rsaquo;</span>
+          </Link>
         )}
 
+        {/* Member cards */}
         {filteredPeople.length === 0 ? (
-          <Card className="p-5 text-center">
-            <p className="mb-2 text-sm font-medium text-charcoal">暂无成员</p>
-            <p className="mb-4 text-xs text-muted">先添加亲属，补全家人档案。</p>
-            {canManage && (
-              <Link href="/family/relatives/new" className="inline-flex items-center justify-center rounded-xl bg-pine px-4 py-2.5 text-sm font-semibold text-cream">
-                去添加亲属
-              </Link>
-            )}
-          </Card>
+          <EmptyState
+            icon={<Users size={24} strokeWidth={1.8} />}
+            title={search ? '未找到匹配的成员' : '暂无成员'}
+            description={search ? '尝试其他关键词' : '先添加亲属，补全家人档案'}
+            action={!search && canManage ? <Link href="/family/relatives/new" className="inline-flex items-center gap-2 rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><UserPlus size={16} /> 添加第一位家人</Link> : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {filteredPeople.map((person) => {
               const membership = person.bound_user_id
                 ? (membershipByUserId.get(person.bound_user_id) ?? null)
                 : null;
+              const isClaimed = person.claim_status === 'claimed';
+              const isSelf = person.id === selfPerson?.id;
 
               return (
                 <Link key={person.id} href={`/family/members/${person.id}`} className="block">
-                  <Card className="p-4 transition-all hover:-translate-y-0.5 hover:border-gold/35 hover:shadow-md">
+                  <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pine/10 text-base font-semibold text-pine">
+                      {/* Avatar */}
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-semibold ${
+                        isSelf ? 'bg-emerald-950 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-white' : 'bg-emerald-50 text-emerald-800'
+                      }`}>
                         {person.display_name.charAt(0)}
                       </div>
+
                       <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <h2 className="truncate text-base font-semibold text-charcoal">{person.display_name}</h2>
-                          <Badge variant={person.claim_status === 'claimed' ? 'pine' : 'gold'}>
+                        <div className="flex items-center justify-between gap-2">
+                          <h2 className="truncate text-base font-semibold text-stone-800">{person.display_name}</h2>
+                          <StatusBadge variant={isClaimed ? 'success' : 'warning'}>
                             {CLAIM_LABELS[person.claim_status]}
-                          </Badge>
+                          </StatusBadge>
                         </div>
-                        <p className="mb-2 text-xs text-muted">
-                          {GENDER_LABELS[person.gender ?? 'unknown']} · {person.birth_year ?? '出生年份未知'} · {LIVING_LABELS[person.living_status]}
+                        <p className="mt-1 text-xs text-stone-500">
+                          {GENDER_LABELS[person.gender ?? 'unknown']}
+                          {person.birth_year && <span> · {person.birth_year} 年</span>}
+                          {person.living_status !== 'alive' && <span> · {person.living_status === 'deceased' ? '已故' : ''}</span>}
                         </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge>{getRelationSummary(person)}</Badge>
-                          <Badge>{person.bound_user_id ? '已绑定用户' : '未绑定用户'}</Badge>
-                          {person.bound_user_id && membership && <Badge variant="pine">{ROLE_LABELS[membership.role]}</Badge>}
-                          {person.id === selfPerson?.id && <Badge variant="gold">本人</Badge>}
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <StatusBadge variant="muted">{getRelationSummary(person)}</StatusBadge>
+                          {isSelf && <StatusBadge variant="warning">本人</StatusBadge>}
+                          {membership && !isSelf && <StatusBadge variant="muted">{ROLE_LABELS[membership.role]}</StatusBadge>}
                         </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </Link>
               );
             })}
           </div>
         )}
-      </PageShell>
+      </div>
     </div>
   );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-cream/10 px-3 py-2">
-      <p className="text-[11px] text-cream/60">{label}</p>
+    <div className="rounded-xl bg-white/10 px-3 py-2">
+      <p className="text-[11px] text-white/50">{label}</p>
       <p className="mt-0.5 text-lg font-bold">{value}</p>
     </div>
   );
@@ -301,8 +301,8 @@ function Stat({ label, value }: { label: string; value: number }) {
 
 function CenteredText({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cream px-4 text-center">
-      <p className="text-sm text-muted">{text}</p>
+    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 text-center">
+      <p className="text-sm text-stone-500">{text}</p>
     </div>
   );
 }

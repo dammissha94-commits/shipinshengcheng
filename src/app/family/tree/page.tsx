@@ -14,7 +14,7 @@ import type { FamilySpace, Person, Relation } from '@/types/domain';
 import { getRelationLabel } from '@/types/domain';
 import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
 import AppHeader from '@/components/AppHeader';
-import { Badge, Card, PageShell, buttonVariants } from '@/components/ui';
+import StatusBadge from '@/components/wujia/StatusBadge';
 import { cn } from '@/lib/utils';
 
 interface NodeProps {
@@ -25,10 +25,8 @@ interface NodeProps {
 }
 
 const GRANDPARENT_RELS: Relation[] = [
-  'grandfather_paternal',
-  'grandmother_paternal',
-  'grandfather_maternal',
-  'grandmother_maternal',
+  'grandfather_paternal', 'grandmother_paternal',
+  'grandfather_maternal', 'grandmother_maternal',
 ];
 const PARENT_RELS: Relation[] = ['father', 'mother'];
 
@@ -42,17 +40,13 @@ function treeRelationLabel(relation: Relation, person: Person | null): string {
       return normalizeRelationType('sibling_of', person?.gender) || fallback;
     }
     if (
-      relation === 'grandfather_paternal' ||
-      relation === 'grandmother_paternal' ||
-      relation === 'grandfather_maternal' ||
-      relation === 'grandmother_maternal'
+      relation === 'grandfather_paternal' || relation === 'grandmother_paternal' ||
+      relation === 'grandfather_maternal' || relation === 'grandmother_maternal'
     ) {
       return getKinshipLabel(relation, person?.gender).label;
     }
     return fallback;
-  } catch {
-    return fallback;
-  }
+  } catch { return fallback; }
 }
 
 export default function TreePage() {
@@ -64,147 +58,114 @@ export default function TreePage() {
 
   useEffect(() => {
     async function loadTree() {
-      if (!hasSupabaseConfig()) {
-        setError('尚未配置 Supabase 环境变量，请先配置 .env.local');
-        setLoading(false);
-        return;
-      }
-
+      if (!hasSupabaseConfig()) { setError('尚未配置 Supabase 环境变量，请先配置 .env.local'); setLoading(false); return; }
       try {
         const user = await getCurrentUser();
-        if (!user) {
-          router.replace(currentLoginRedirectPath());
-          return;
-        }
-
+        if (!user) { router.replace(currentLoginRedirectPath()); return; }
         const currentFamily = await getCurrentFamilySpace(undefined, user);
-        if (!currentFamily) {
-          router.replace('/create');
-          return;
-        }
-
+        if (!currentFamily) { router.replace('/create'); return; }
         const [profiles, relations] = await Promise.all([
           listFamilyPersons(currentFamily.id),
           listPersonRelations(currentFamily.id),
         ]);
-
         setFamily(currentFamily);
         setPersons(mapProfilesToTreePersons(profiles, relations, user.id));
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : '加载三代谱失败');
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     }
-
     loadTree();
   }, [router]);
 
   if (loading) return <CenteredText text="加载中..." />;
   if (error || !family) return <CenteredText text={error || '请先创建数字家堂'} />;
 
-  function get(rel: Relation) {
-    return persons.find((person) => person.relation === rel) ?? null;
-  }
-
-  function add(rel: Relation) {
-    router.push(`/family/relatives/new?relation=${rel}`);
-  }
+  function get(rel: Relation) { return persons.find((p) => p.relation === rel) ?? null; }
+  function add(rel: Relation) { router.push(`/family/relatives/new?relation=${rel}`); }
 
   const selfPerson = get('self');
   const spouse = get('spouse');
-  const siblings = persons.filter((person) => person.relation === 'sibling');
-  const children = persons.filter((person) => person.relation === 'child');
-  const filledGrandparents = GRANDPARENT_RELS.filter((relation) => Boolean(get(relation))).length;
-  const filledParents = PARENT_RELS.filter((relation) => Boolean(get(relation))).length;
+  const siblings = persons.filter((p) => p.relation === 'sibling');
+  const children = persons.filter((p) => p.relation === 'child');
+  const filledGrandparents = GRANDPARENT_RELS.filter((r) => Boolean(get(r))).length;
+  const filledParents = PARENT_RELS.filter((r) => Boolean(get(r))).length;
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-stone-50">
       <AppHeader
         title={`${family.surname}家三代谱`}
         backHref="/family"
         rightElement={
-          <button
-            onClick={() => add('father')}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-pine transition-colors hover:bg-sand/60"
-            aria-label="添加成员"
-          >
+          <button onClick={() => add('father')}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-stone-200"
+            aria-label="添加成员">
             <Plus size={18} strokeWidth={2.4} />
           </button>
         }
       />
 
-      <PageShell className="min-h-0" contentClassName="space-y-4">
-        <Card className="overflow-hidden border-pine/10 bg-pine text-cream">
-          <div className="p-5">
-            <p className="mb-1 text-xs tracking-wider text-cream/60">家族关系</p>
-            <h1 className="text-xl font-bold">{family.displayName}</h1>
-            <p className="mt-1 text-sm text-cream/70">
-              {persons.length} 位家人 · 祖辈 {filledGrandparents}/4 · 父母 {filledParents}/2
-            </p>
-          </div>
-        </Card>
+      <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
+        {/* Header card */}
+        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+          <p className="text-xs text-white/40 tracking-widest font-medium">家族关系</p>
+          <h1 className="mt-0.5 text-xl font-bold">{family.displayName}</h1>
+          <p className="mt-1 text-sm text-white/55">
+            {persons.length} 位家人 · 祖辈 {filledGrandparents}/4 · 父母 {filledParents}/2
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Link href="/family/tree/graph" className={cn(buttonVariants({ variant: 'primary' }), 'gap-2')}>
-            <Network size={16} />
-            查看家族关系图
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Link href="/family/tree/graph"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+            <Network size={14} />关系图
           </Link>
-          <Link href="/family/members" className={cn(buttonVariants({ variant: 'secondary' }), 'gap-2')}>
-            <Users size={16} />
-            成员列表
+          <Link href="/family/members"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            <Users size={14} />成员列表
           </Link>
-          <Link href="/family/settings" className={cn(buttonVariants({ variant: 'secondary' }), 'gap-2')}>
-            <Settings size={16} />
-            家堂设置
+          <Link href="/family/settings"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            <Settings size={14} />设置
           </Link>
-          <Link href="/family/output" className={cn(buttonVariants({ variant: 'gold' }), 'gap-2')}>
-            <FileText size={16} />
-            生成预览
+          <Link href="/family/output"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">
+            <FileText size={14} />成果物
           </Link>
         </div>
 
+        {/* Generations */}
         <GenRow label="祖辈" badge={filledGrandparents > 0 ? `已录入 ${filledGrandparents}/4` : '尚未录入'}>
-          {GRANDPARENT_RELS.map((relation) => (
-            <PersonNode key={relation} person={get(relation)} relation={relation} onAdd={() => add(relation)} />
-          ))}
+          {GRANDPARENT_RELS.map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} />)}
         </GenRow>
-
         <Connector />
-
         <GenRow label="父母" badge={filledParents > 0 ? `已录入 ${filledParents}/2` : '尚未录入'}>
-          {PARENT_RELS.map((relation) => (
-            <PersonNode key={relation} person={get(relation)} relation={relation} onAdd={() => add(relation)} />
-          ))}
+          {PARENT_RELS.map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} />)}
         </GenRow>
-
         <Connector />
-
         <GenRow label="本人 / 配偶 / 兄弟姐妹">
-          {siblings.map((sibling) => (
-            <PersonNode key={sibling.id} person={sibling} relation="sibling" />
-          ))}
+          {siblings.map((s) => <PersonNode key={s.id} person={s} relation="sibling" />)}
           {selfPerson && <PersonNode person={selfPerson} relation="self" isOwner />}
           <PersonNode person={spouse} relation="spouse" onAdd={() => add('spouse')} />
           <PersonNode person={null} relation="sibling" onAdd={() => add('sibling')} />
         </GenRow>
-
         <Connector />
-
         <GenRow label="子女" badge={children.length > 0 ? `${children.length} 位` : '尚未录入'}>
-          {children.map((child) => (
-            <PersonNode key={child.id} person={child} relation="child" />
-          ))}
+          {children.map((c) => <PersonNode key={c.id} person={c} relation="child" />)}
           <PersonNode person={null} relation="child" onAdd={() => add('child')} />
         </GenRow>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-3 text-xs text-muted">
-          <LegendDot className="bg-pine ring-1 ring-gold/60 ring-offset-1" label="本人" />
-          <LegendDot className="bg-sand" label="已录入" />
-          <LegendDot className="border-2 border-dashed border-sand" label="待添加" />
-          <Badge variant="gold">待认领</Badge>
+        {/* Legend */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4">
+          <p className="mb-2 text-xs font-semibold text-stone-500">图例</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-stone-500">
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-emerald-950 ring-1 ring-amber-400 ring-offset-1 ring-offset-white" />本人</span>
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-stone-200" />已录入</span>
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full border-2 border-dashed border-stone-300" />待添加</span>
+            <StatusBadge variant="warning">待认领</StatusBadge>
+          </div>
         </div>
-      </PageShell>
+      </div>
     </div>
   );
 }
@@ -215,72 +176,53 @@ function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
   if (!person) {
     return (
       <button onClick={onAdd} className="group flex w-[76px] flex-col items-center gap-1.5" aria-label={`添加${label}`}>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-sand bg-cream/80 transition-all group-hover:border-gold/70 group-active:scale-95">
-          <Plus size={20} className="text-sand group-hover:text-gold" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 transition-all group-hover:border-amber-400 group-active:scale-95">
+          <Plus size={20} className="text-stone-300 group-hover:text-amber-500" />
         </div>
-        <span className="w-full truncate text-center text-[11px] leading-tight text-muted/80">{label}</span>
-        <span className="text-[10px] text-sand/90">添加</span>
+        <span className="w-full truncate text-center text-[11px] leading-tight text-stone-400">{label}</span>
+        <span className="text-[10px] text-stone-300">添加</span>
       </button>
     );
   }
 
-  const initial = person.name.charAt(0);
-  const isClaimed = person.claimStatus === 'claimed';
-
   return (
     <div className="flex w-[76px] flex-col items-center gap-1.5">
-      <div
-        className={cn(
-          'flex h-14 w-14 shrink-0 select-none items-center justify-center rounded-2xl text-lg font-semibold',
-          isOwner
-            ? 'bg-pine text-cream ring-2 ring-gold/70 ring-offset-2 ring-offset-cream'
-            : 'bg-sand text-pine'
-        )}
-      >
-        {initial}
+      <div className={cn(
+        'flex h-14 w-14 shrink-0 select-none items-center justify-center rounded-2xl text-lg font-semibold',
+        isOwner ? 'bg-emerald-950 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-stone-50'
+          : 'bg-stone-100 text-emerald-800'
+      )}>
+        {person.name.charAt(0)}
       </div>
-      <span className="w-full truncate text-center text-[11px] font-medium leading-tight text-charcoal">
-        {person.name}
-      </span>
-      <span className="text-center text-[10px] text-muted">{label}</span>
-      {!isClaimed && !isOwner && <Badge variant="gold" className="px-1.5 py-0.5 text-[10px]">待认领</Badge>}
+      <span className="w-full truncate text-center text-[11px] font-medium text-stone-800">{person.name}</span>
+      <span className="text-center text-[10px] text-stone-500">{label}</span>
+      {person.claimStatus !== 'claimed' && !isOwner && (
+        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">待认领</span>
+      )}
     </div>
   );
 }
 
 function GenRow({ label, badge, children }: { label: string; badge?: string; children: React.ReactNode }) {
   return (
-    <Card className="p-4">
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-wider text-muted">{label}</span>
-        {badge && <Badge>{badge}</Badge>}
+        <span className="text-xs font-semibold tracking-wider text-stone-500">{label}</span>
+        {badge && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">{badge}</span>}
       </div>
       <div className="flex flex-wrap items-start justify-start gap-3">{children}</div>
-    </Card>
+    </div>
   );
 }
 
 function Connector() {
-  return (
-    <div className="flex justify-center py-0.5">
-      <div className="h-5 w-px bg-sand" />
-    </div>
-  );
-}
-
-function LegendDot({ className, label }: { className: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className={cn('h-4 w-4 rounded-full', className)} />
-      <span>{label}</span>
-    </div>
-  );
+  return <div className="flex justify-center py-0.5"><div className="h-5 w-px bg-stone-300" /></div>;
 }
 
 function CenteredText({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cream px-4 text-center">
-      <p className="text-sm text-muted">{text}</p>
+    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 text-center">
+      <p className="text-sm text-stone-500">{text}</p>
     </div>
   );
 }

@@ -3,51 +3,27 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  BarChart3,
-  CalendarDays,
-  CheckCircle2,
-  FileText,
-  Network,
-  PieChart,
-  Users,
-} from 'lucide-react';
+import { BarChart3, CalendarDays, CheckCircle2, FileText, Network, PieChart, Users } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
-import { Card, buttonVariants } from '@/components/ui';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
-import {
-  getFamilyCompletionScore,
-  getFamilyStatistics,
-} from '@/lib/services/statistics-service';
+import { getFamilyCompletionScore, getFamilyStatistics } from '@/lib/services/statistics-service';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { FamilySpace } from '@/types/domain';
 import type { FamilyCompletionScore, FamilyStatistics } from '@/types/service';
 
-const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
-
 type LoadState = 'loading' | 'ready' | 'empty' | 'error';
 
 function sanitizeError(error: unknown, fallback: string): string {
-  const message = error instanceof Error ? error.message : fallback;
-  if (/auth session missing/i.test(message)) return '请先登录';
-  if (/permission|denied|forbidden|权限/i.test(message)) return '你暂无权限执行此操作';
-  if (
-    /failed|violates|duplicate key|does not exist|relation .* does not exist|could not find the table/i.test(
-      message
-    )
-  ) {
-    return fallback;
-  }
+  const msg = error instanceof Error ? error.message : fallback;
+  if (/auth session missing/i.test(msg)) return '请先登录';
+  if (/permission|denied|forbidden|权限/i.test(msg)) return '你暂无权限执行此操作';
+  if (/failed|violates|does not exist|could not find/i.test(msg)) return fallback;
   return fallback;
 }
-
-function percent(value: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.round((value / total) * 100);
-}
+function percent(value: number, total: number): number { if (total <= 0) return 0; return Math.round((value / total) * 100); }
 
 export default function FamilyStatisticsPage() {
   const router = useRouter();
@@ -58,312 +34,117 @@ export default function FamilyStatisticsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadStatistics() {
-      if (!hasSupabaseConfig()) {
-        setError(SUPABASE_FALLBACK_MESSAGE);
-        setState('error');
-        return;
-      }
-
+    async function load() {
+      if (!hasSupabaseConfig()) { setError('尚未配置 Supabase 环境变量，请先配置 .env.local'); setState('error'); return; }
       try {
         const user = await getCurrentUser();
-        if (!user) {
-          router.replace(currentLoginRedirectPath());
-          return;
-        }
-
+        if (!user) { router.replace(currentLoginRedirectPath()); return; }
         const currentFamily = await getCurrentFamilySpace(undefined, user);
-        if (!currentFamily) {
-          router.replace('/create');
-          return;
-        }
-
-        const [familyStatistics, completionScore] = await Promise.all([
-          getFamilyStatistics(currentFamily.id),
-          getFamilyCompletionScore(currentFamily.id),
-        ]);
-
-        setFamily(currentFamily);
-        setStatistics(familyStatistics);
-        setCompletion(completionScore);
+        if (!currentFamily) { router.replace('/create'); return; }
+        const [familyStatistics, completionScore] = await Promise.all([getFamilyStatistics(currentFamily.id), getFamilyCompletionScore(currentFamily.id)]);
+        setFamily(currentFamily); setStatistics(familyStatistics); setCompletion(completionScore);
         setState(familyStatistics.totalPersons === 0 ? 'empty' : 'ready');
-      } catch (loadError) {
-        setError(sanitizeError(loadError, '加载家堂数据看板失败'));
-        setState('error');
-      }
+      } catch (e) { setError(sanitizeError(e, '加载家堂数据看板失败')); setState('error'); }
     }
-
-    loadStatistics();
+    load();
   }, [router]);
 
-  if (state === 'loading') {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
-        <p className="text-sm text-muted">加载中...</p>
-      </div>
-    );
-  }
-
-  if (state === 'error') {
-    return (
-      <PageShell>
-        <CenteredPanel text={error || '加载家堂数据看板失败'} />
-      </PageShell>
-    );
-  }
-
-  if (state === 'empty' || !family || !statistics || !completion) {
-    return (
-      <PageShell>
-        <main className="mx-auto max-w-md px-4 py-6">
-          <Card className="border-sand bg-card p-6 text-center">
-            <p className="text-sm text-muted">暂无可统计的家人档案，请先添加亲属。</p>
-            <Link
-              href="/family/relatives/new"
-              className={cn(buttonVariants({ variant: 'primary' }), 'mt-4 w-full')}
-            >
-              添加亲属
-            </Link>
-          </Card>
-        </main>
-      </PageShell>
-    );
-  }
+  if (state === 'loading') return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">加载中...</p></div>;
+  if (state === 'error') return <S><P text={error || '加载失败'} /></S>;
+  if (state === 'empty' || !family || !statistics || !completion) return <S><main className="max-w-lg mx-auto px-4 py-6"><div className="rounded-2xl border border-stone-200 bg-white p-6 text-center"><p className="text-sm text-stone-500">暂无可统计的家人档案，请先添加亲属。</p><Link href="/family/relatives/new" className="mt-4 inline-flex rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">添加亲属</Link></div></main></S>;
 
   const claimRate = percent(statistics.claimedPersons, statistics.totalPersons);
   const memoryTotal = statistics.totalStories + statistics.totalPhotos + statistics.totalMeetings;
 
   return (
-    <PageShell>
-      <main className="mx-auto max-w-md space-y-4 px-4 py-6">
-        <Card className="overflow-hidden border-pine/10 bg-pine text-cream">
-          <div className="p-5">
-            <p className="text-xs tracking-wider text-cream/60">家堂数据看板</p>
-            <h1 className="mt-1 text-xl font-bold">{family.displayName ?? family.display_name}</h1>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <HeroMetric label="总人数" value={statistics.totalPersons} />
-              <HeroMetric label="已认领" value={statistics.claimedPersons} />
-              <HeroMetric label="完整度" value={`${completion.score}%`} />
-            </div>
-            <ProgressBar value={completion.score} className="mt-4 bg-cream/20" fillClassName="bg-gold" />
+    <S>
+      <main className="mx-auto max-w-lg space-y-4 px-4 py-6">
+        {/* Header */}
+        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+          <p className="text-xs text-white/40 tracking-widest font-medium">家堂数据看板</p>
+          <h1 className="mt-0.5 text-xl font-bold">{family.displayName ?? family.display_name}</h1>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <HM label="总人数" value={statistics.totalPersons} />
+            <HM label="已认领" value={statistics.claimedPersons} />
+            <HM label="完整度" value={`${completion.score}%`} />
           </div>
-        </Card>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-amber-400 transition-all duration-500" style={{ width: `${completion.score}%` }} /></div>
+        </div>
 
         {(statistics.warnings?.length ?? 0) > 0 && (
-          <Card className="border-gold/30 bg-gold/10 p-4">
-            <p className="text-sm font-semibold text-gold">部分统计项暂不可用</p>
-            <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted">
-              {statistics.warnings?.map((warning) => <li key={warning}>{warning}</li>)}
-            </ul>
-          </Card>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-semibold text-amber-700">部分统计项暂不可用</p><ul className="mt-2 space-y-1 text-xs text-stone-500">{statistics.warnings?.map((w) => <li key={w}>{w}</li>)}</ul></div>
         )}
 
-        <section className="grid grid-cols-2 gap-3">
-          <MetricCard icon={<Users size={18} />} label="待认领人数" value={statistics.unclaimedPersons} />
-          <MetricCard icon={<Network size={18} />} label="关系总数" value={statistics.totalRelations} />
-          <MetricCard icon={<FileText size={18} />} label="家族记忆" value={memoryTotal} />
-          <MetricCard icon={<CalendarDays size={18} />} label="家庭节点" value={statistics.totalCalendarEvents} />
-        </section>
+        <div className="grid grid-cols-2 gap-3">
+          <MC icon={<Users size={18} />} label="待认领人数" value={statistics.unclaimedPersons} />
+          <MC icon={<Network size={18} />} label="关系总数" value={statistics.totalRelations} />
+          <MC icon={<FileText size={18} />} label="家族记忆" value={memoryTotal} />
+          <MC icon={<CalendarDays size={18} />} label="家庭节点" value={statistics.totalCalendarEvents} />
+        </div>
 
-        <Card className="border-sand bg-card p-4">
-          <SectionHeader icon={<Users size={16} />} title="家人档案统计" />
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <MiniStat label="在世" value={statistics.alivePersons} />
-            <MiniStat label="已故" value={statistics.deceasedPersons} />
-            <MiniStat label="未知" value={statistics.unknownLivingPersons} />
+        <SC title={<><Users size={16} />家人档案统计</>}>
+          <div className="grid grid-cols-3 gap-2">
+            <MS label="在世" value={statistics.alivePersons} /><MS label="已故" value={statistics.deceasedPersons} /><MS label="未知" value={statistics.unknownLivingPersons} />
           </div>
-          <div className="mt-4">
-            <div className="mb-1 flex items-center justify-between text-xs text-muted">
-              <span>已认领 / 待认领</span>
-              <span>{claimRate}%</span>
-            </div>
-            <StackedBar
-              first={statistics.claimedPersons}
-              second={statistics.unclaimedPersons}
-              total={statistics.totalPersons}
-            />
-          </div>
-        </Card>
+          <div className="mt-4"><div className="mb-1 flex items-center justify-between text-xs text-stone-500"><span>已认领 / 待认领</span><span>{claimRate}%</span></div><div className="flex h-3 overflow-hidden rounded-full bg-stone-200"><div className="bg-emerald-950" style={{ width: `${percent(statistics.claimedPersons, statistics.totalPersons)}%` }} /><div className="bg-amber-500" style={{ width: `${percent(statistics.unclaimedPersons, statistics.totalPersons)}%` }} /></div></div>
+        </SC>
 
-        <Card className="border-sand bg-card p-4">
-          <SectionHeader icon={<Network size={16} />} title="关系完整度" />
-          <div className="mt-3 space-y-3">
-            <RelationRow label="父母 / 子女关系" value={statistics.parentRelations} total={statistics.totalRelations} />
-            <RelationRow label="配偶关系" value={statistics.spouseRelations} total={statistics.totalRelations} />
-            <RelationRow label="兄弟姐妹关系" value={statistics.siblingRelations} total={statistics.totalRelations} />
-            <RelationRow label="祖辈关系" value={statistics.grandparentRelations} total={statistics.totalRelations} />
-          </div>
-        </Card>
-
-        <Card className="border-sand bg-card p-4">
-          <SectionHeader icon={<PieChart size={16} />} title="家族记忆统计" />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <MiniStat label="家族故事" value={statistics.totalStories} />
-            <MiniStat label="相册记录" value={statistics.totalPhotos} />
-            <MiniStat label="家族议事" value={statistics.totalMeetings} />
-            <MiniStat label="议事意见" value={statistics.totalMeetingOpinions} />
-            <MiniStat label="投票记录" value={statistics.totalMeetingVotes} />
-            <MiniStat label="成果物" value={statistics.totalOutputs} />
-          </div>
-        </Card>
-
-        <Card className="border-sand bg-card p-4">
-          <SectionHeader icon={<CalendarDays size={16} />} title="家庭节点统计" />
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <MiniStat label="日历事件" value={statistics.totalCalendarEvents} />
-            <MiniStat label="生日提醒" value={statistics.birthdayEvents} />
-            <MiniStat label="未来 30 天" value={statistics.upcomingEvents} />
-          </div>
-        </Card>
-
-        <Card className="border-sand bg-card p-4">
-          <SectionHeader icon={<CheckCircle2 size={16} />} title="家堂完整度" />
-          <div className="mt-3 rounded-2xl bg-cream p-3">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="font-medium text-charcoal">当前完成度</span>
-              <span className="font-semibold text-pine">{completion.score}%</span>
-            </div>
-            <ProgressBar value={completion.score} />
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {completion.completedItems.slice(0, 6).map((item) => (
-              <span key={item} className="rounded-full bg-pine/10 px-2.5 py-1 text-xs text-pine">
-                {item}
-              </span>
+        <SC title={<><Network size={16} />关系完整度</>}>
+          <div className="space-y-3">
+            {[['父母/子女关系',statistics.parentRelations],['配偶关系',statistics.spouseRelations],['兄弟姐妹关系',statistics.siblingRelations],['祖辈关系',statistics.grandparentRelations]].map(([l,v]) => (
+              <div key={l as string}><div className="mb-1 flex items-center justify-between text-xs"><span className="text-stone-500">{l as string}</span><span className="font-medium text-stone-700">{v as number}</span></div><div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${percent(v as number, statistics.totalRelations)}%` }} /></div></div>
             ))}
           </div>
-        </Card>
+        </SC>
 
-        <Card className="border-gold/30 bg-gold/10 p-4">
-          <SectionHeader icon={<BarChart3 size={16} />} title="下一步建议" />
-          {completion.nextSuggestions.length === 0 ? (
-            <p className="mt-3 rounded-xl bg-card px-3 py-3 text-sm text-muted">
-              当前家堂资料已经比较完整，可以继续整理家族故事和成果物。
-            </p>
-          ) : (
-            <div className="mt-3 space-y-2">
-              {completion.nextSuggestions.map((suggestion) => (
-                <SuggestionItem key={suggestion} text={suggestion} />
-              ))}
-            </div>
-          )}
-        </Card>
+        <SC title={<><PieChart size={16} />记忆统计</>}>
+          <div className="grid grid-cols-2 gap-2">
+            <MS label="家族故事" value={statistics.totalStories} />
+            <MS label="相册记录" value={statistics.totalPhotos} />
+            <MS label="家族议事" value={statistics.totalMeetings} />
+            <MS label="议事意见" value={statistics.totalMeetingOpinions} />
+            <MS label="投票记录" value={statistics.totalMeetingVotes} />
+            <MS label="成果物" value={statistics.totalOutputs} />
+          </div>
+        </SC>
+
+        <SC title={<><CalendarDays size={16} />节点统计</>}>
+          <div className="grid grid-cols-3 gap-2">
+            <MS label="日历事件" value={statistics.totalCalendarEvents} /><MS label="生日提醒" value={statistics.birthdayEvents} /><MS label="未来30天" value={statistics.upcomingEvents} />
+          </div>
+        </SC>
+
+        <SC title={<><CheckCircle2 size={16} />完整度</>}>
+          <div className="rounded-xl bg-stone-50 p-4">
+            <div className="mb-2 flex items-center justify-between text-sm"><span className="font-medium text-stone-700">当前完成度</span><span className="font-semibold text-emerald-700">{completion.score}%</span></div>
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${completion.score}%` }} /></div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {completion.completedItems.slice(0, 6).map((item) => <span key={item} className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">{item}</span>)}
+          </div>
+        </SC>
+
+        <SC title={<><BarChart3 size={16} />下一步建议</>} className="border-amber-200 bg-amber-50">
+          {completion.nextSuggestions.length === 0 ? <p className="rounded-xl bg-white px-4 py-3 text-sm text-stone-500">当前家堂资料已经比较完整。</p>
+            : <div className="space-y-2">{completion.nextSuggestions.map((s) => <div key={s} className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm text-stone-700"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">!</span>{s}</div>)}</div>}
+        </SC>
 
         <div className="grid grid-cols-2 gap-2 pb-4">
-          <Link href="/family/tree/graph" className={cn(buttonVariants({ variant: 'secondary' }), 'text-xs')}>
-            查看关系图
-          </Link>
-          <Link href="/family/output" className={cn(buttonVariants({ variant: 'primary' }), 'text-xs')}>
-            生成成果物
-          </Link>
+          <Link href="/family/tree/graph" className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"><Network size={14} />查看关系图</Link>
+          <Link href="/family/output" className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><FileText size={14} />生成成果物</Link>
         </div>
       </main>
-    </PageShell>
+    </S>
   );
 }
 
-function PageShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-cream">
-      <AppHeader title="家堂数据看板" backHref="/family" />
-      {children}
-    </div>
-  );
+function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-stone-50"><AppHeader title="数据看板" backHref="/family" />{children}</div>; }
+function P({ text }: { text: string }) { return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>; }
+function HM({ label, value }: { label: string; value: number | string }) { return <div className="rounded-2xl bg-white/10 px-3 py-2"><p className="text-xs text-white/50">{label}</p><p className="mt-1 text-lg font-bold">{value}</p></div>; }
+function MC({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div><p className="text-xs text-stone-500">{label}</p><p className="mt-1 text-xl font-bold text-stone-800">{value}</p></div>;
 }
-
-function CenteredPanel({ text }: { text: string }) {
-  return (
-    <main className="mx-auto flex min-h-[70vh] max-w-md items-center justify-center px-4 text-center">
-      <p className="rounded-2xl border border-sand/70 bg-card px-4 py-5 text-sm text-muted shadow-sm">{text}</p>
-    </main>
-  );
+function SC({ title, children, className }: { title: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return <div className={cn('rounded-2xl border border-stone-200 bg-white p-4 shadow-sm', className)}><div className="flex items-center gap-2 mb-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">{title}</span></div>{children}</div>;
 }
-
-function HeroMetric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-2xl bg-cream/10 px-3 py-2">
-      <p className="text-xs text-cream/60">{label}</p>
-      <p className="mt-1 text-lg font-bold text-cream">{value}</p>
-    </div>
-  );
-}
-
-function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <Card className="border-sand bg-card p-4">
-      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-pine/10 text-pine">
-        {icon}
-      </div>
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold text-charcoal">{value}</p>
-    </Card>
-  );
-}
-
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pine/10 text-pine">{icon}</span>
-      <h2 className="text-sm font-semibold text-charcoal">{title}</h2>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl bg-cream px-3 py-2">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-charcoal">{value}</p>
-    </div>
-  );
-}
-
-function ProgressBar({
-  value,
-  className,
-  fillClassName,
-}: {
-  value: number;
-  className?: string;
-  fillClassName?: string;
-}) {
-  return (
-    <div className={cn('h-2 overflow-hidden rounded-full bg-sand', className)}>
-      <div className={cn('h-full rounded-full bg-pine', fillClassName)} style={{ width: `${value}%` }} />
-    </div>
-  );
-}
-
-function StackedBar({ first, second, total }: { first: number; second: number; total: number }) {
-  const firstWidth = percent(first, total);
-  const secondWidth = percent(second, total);
-  return (
-    <div className="flex h-3 overflow-hidden rounded-full bg-sand">
-      <div className="bg-pine" style={{ width: `${firstWidth}%` }} />
-      <div className="bg-gold" style={{ width: `${secondWidth}%` }} />
-    </div>
-  );
-}
-
-function RelationRow({ label, value, total }: { label: string; value: number; total: number }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-muted">{label}</span>
-        <span className="font-medium text-charcoal">{value}</span>
-      </div>
-      <ProgressBar value={percent(value, total)} />
-    </div>
-  );
-}
-
-function SuggestionItem({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-sm text-charcoal">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold/20 text-xs text-gold">
-        !
-      </span>
-      {text}
-    </div>
-  );
-}
+function MS({ label, value }: { label: string; value: number }) { return <div className="rounded-xl bg-stone-50 px-3 py-2"><p className="text-xs text-stone-400">{label}</p><p className="mt-1 text-lg font-semibold text-stone-700">{value}</p></div>; }
