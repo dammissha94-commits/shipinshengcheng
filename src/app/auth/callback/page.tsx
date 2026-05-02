@@ -48,8 +48,8 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen bg-cream flex items-center justify-center px-4">
-      <p className="text-sm text-muted">{message}</p>
+    <main className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+      <p className="text-sm text-stone-500">{message}</p>
     </main>
   );
 }
