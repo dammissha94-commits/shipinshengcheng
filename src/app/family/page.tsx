@@ -203,7 +203,17 @@ export default function FamilyPage() {
           )}
         </section>
 
-        {/* ===== Recent Events & Meetings - Two Column ===== */}
+        {/* ===== Recent Activity ===== */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
+              <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />最近动态
+            </h2>
+            <Link href="/family/activity" className="text-xs font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1">
+              查看全部动态 <ArrowRight size={12} />
+            </Link>
+          </div>
+        </section>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Reminders */}
           <section>
