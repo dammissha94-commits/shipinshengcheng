@@ -245,4 +245,51 @@ export async function updateInviteStatus(
   return result.data!;
 }
 
+/** P0-A: Reject an invite — marks token as rejected and person as rejected */
+export async function rejectInviteToken(
+  token: string,
+  client?: SupabaseServiceClient
+): Promise<void> {
+  const resolvedClient = getClient(client);
+  if (!resolvedClient) return;
+
+  const inviteResult = await resolvedClient
+    .from<InviteToken>('invite_tokens')
+    .select('*')
+    .eq('token', token)
+    .eq('status', 'pending');
+
+  throwServiceError(inviteResult.error, 'reject invite failed');
+  const invite = (inviteResult.data ?? [])[0];
+  if (!invite || !invite.invitee_person_id) throw new Error('邀请链接无效或已过期');
+
+  const user = await getCurrentUser();
+  if (!user) throw new Error('请先登录');
+
+  // Mark invite as rejected
+  await resolvedClient
+    .from<InviteToken>('invite_tokens')
+    .update({ status: 'rejected' as unknown as InviteStatus })
+    .eq('id', invite.id)
+    .select('*');
+
+  // Mark person as rejected
+  await resolvedClient
+    .from<PersonProfile>('person_profiles')
+    .update({ claim_status: 'rejected' as unknown as PersonProfile['claim_status'], updated_at: nowIso() })
+    .eq('id', invite.invitee_person_id)
+    .eq('claim_status', 'unclaimed')
+    .select('*');
+
+  // Log
+  await resolvedClient.from<ActionLog>('action_logs').insert({
+    family_id: invite.family_id,
+    actor_user_id: user.id,
+    target_type: 'invite_token',
+    target_id: invite.id,
+    action_type: 'reject_invite_token',
+    metadata: { person_id: invite.invitee_person_id },
+  });
+}
+
 export const listInviteTokens = listPendingInvites;

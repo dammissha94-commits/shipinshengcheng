@@ -4,26 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Users,
-  GitBranch,
-  BookOpen,
-  Camera,
-  Calendar,
-  Settings,
-  UserPlus,
-  TrendingUp,
-  ArrowRight,
+  Users, GitBranch, BookOpen, Camera, Calendar, Settings, UserPlus,
+  TrendingUp, ArrowRight, Clock, Star, Edit3, MailPlus,
 } from 'lucide-react';
 import type { FamilySpace, PersonProfile, FamilyMeeting, FamilyStory } from '@/types/domain';
 import { ensureProfile, getCurrentUser, signOut } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
-import {
-  listThisWeekFamilyEvents,
-  listTodayFamilyReminders,
-  listUpcomingFamilyEvents,
-} from '@/lib/services/calendar-service';
+import { listThisWeekFamilyEvents, listTodayFamilyReminders, listUpcomingFamilyEvents } from '@/lib/services/calendar-service';
 import { listFamilyPersons, listPersonRelations } from '@/lib/services/person-service';
 import { listFamilyMeetings } from '@/lib/services/meeting-service';
 import { listFamilyStories } from '@/lib/services/story-service';
@@ -31,13 +20,10 @@ import { mapProfilesToTreePersons } from '@/lib/family-view';
 import { calcCompletion } from '@/lib/family-completion';
 import type { FamilyReminderSummary } from '@/types/service';
 import StatusBadge from '@/components/wujia/StatusBadge';
-import EmptyState from '@/components/wujia/EmptyState';
 
 function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
-
-const GENDER_LABELS: Record<string, string> = { male: '男', female: '女', unknown: '' };
 
 export default function FamilyPage() {
   const router = useRouter();
@@ -49,14 +35,12 @@ export default function FamilyPage() {
   const [completion, setCompletion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [motto, setMotto] = useState('');
+  const [editingMotto, setEditingMotto] = useState(false);
 
   useEffect(() => {
     async function loadFamily() {
-      if (!hasSupabaseConfig()) {
-        setError('尚未配置 Supabase 环境变量，请先配置 .env.local');
-        setLoading(false);
-        return;
-      }
+      if (!hasSupabaseConfig()) { setError('尚未配置 Supabase 环境变量，请先配置 .env.local'); setLoading(false); return; }
       try {
         const user = await getCurrentUser();
         if (!user) { router.replace(currentLoginRedirectPath()); return; }
@@ -65,145 +49,167 @@ export default function FamilyPage() {
         if (!currentFamily) { router.replace('/create'); return; }
         setFamily(currentFamily);
 
-        const [
-          familyProfiles, familyRelations,
-          todayReminders, weekReminders, upcomingEvents,
-          meetings, stories,
-        ] = await Promise.all([
-          listFamilyPersons(currentFamily.id),
-          listPersonRelations(currentFamily.id),
-          listTodayFamilyReminders(currentFamily.id),
-          listThisWeekFamilyEvents(currentFamily.id),
+        const [familyProfiles, familyRelations, todayR, weekR, upcoming, meetings, stories] = await Promise.all([
+          listFamilyPersons(currentFamily.id), listPersonRelations(currentFamily.id),
+          listTodayFamilyReminders(currentFamily.id), listThisWeekFamilyEvents(currentFamily.id),
           listUpcomingFamilyEvents(currentFamily.id, 30),
-          listFamilyMeetings(currentFamily.id),
-          listFamilyStories(currentFamily.id),
+          listFamilyMeetings(currentFamily.id), listFamilyStories(currentFamily.id),
         ]);
 
         setProfiles(familyProfiles);
         setRecentMeetings(meetings.slice(0, 3));
-        setRecentStories(stories.filter((s) => s.status === 'active').slice(0, 3));
-        const persons = mapProfilesToTreePersons(familyProfiles, familyRelations, user.id);
-        setCompletion(calcCompletion(persons));
-        setReminderSummary({
-          todayCount: todayReminders.length,
-          weekCount: weekReminders.length,
-          monthCount: upcomingEvents.events.length,
-          upcoming: upcomingEvents.events.slice(0, 4),
-        });
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : '加载家堂失败');
-      } finally { setLoading(false); }
+        setRecentStories(stories.filter((s) => s.status === 'active').slice(0, 4));
+        setCompletion(calcCompletion(mapProfilesToTreePersons(familyProfiles, familyRelations, user.id)));
+        setReminderSummary({ todayCount: todayR.length, weekCount: weekR.length, monthCount: upcoming.events.length, upcoming: upcoming.events.slice(0, 3) });
+      } catch (e) { setError(e instanceof Error ? e.message : '加载家堂失败'); }
+      finally { setLoading(false); }
     }
     loadFamily();
   }, [router]);
 
   async function handleSignOut() { await signOut(); router.push(currentLoginRedirectPath()); }
 
-  if (loading) {
-    return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
-  }
-  if (error || !family) {
-    return <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error || '请先创建数字家堂'}</p></div>;
-  }
+  if (loading) return <C text="加载中…" />;
+  if (error || !family) return <C text={error || '请先创建数字家堂'} />;
 
   const claimedCount = profiles.filter((p) => p.claim_status === 'claimed').length;
-  const unclaimedCount = profiles.length - claimedCount;
-  const memoryTotal = recentStories.length; // stories count as memory indicator
+  const unclaimed = profiles.filter((p) => p.claim_status === 'unclaimed');
+  const deceased = profiles.filter((p) => p.living_status === 'deceased');
   const hasFamily = profiles.length > 0;
 
   return (
     <div className="min-h-screen bg-stone-50 pb-safe">
-      {/* ===== Welcome Header ===== */}
+      {/* ===== Hero Header ===== */}
       <div className="bg-emerald-950 px-5 pt-14 pb-10 text-white">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-white/40 tracking-[0.12em] font-medium">我的家堂</p>
+          <p className="text-xs text-white/40 tracking-[0.12em] font-medium">{family.surname}氏祠堂</p>
           <button onClick={handleSignOut} className="text-xs text-white/40 hover:text-white/70 transition-colors">退出</button>
         </div>
         <h1 className="text-[26px] font-bold tracking-tight">{family.displayName}</h1>
-        <p className="mt-1.5 text-sm text-white/50 leading-relaxed max-w-md">
-          整理家人关系、家庭节点与家族记忆
-        </p>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/50">
+          <span>{profiles.length} 位成员</span>
+          <span>{claimedCount} 人已认领</span>
+          {unclaimed.length > 0 && <span>{unclaimed.length} 人待认领</span>}
+        </div>
         {!hasFamily && (
-          <Link href="/family/relatives/new"
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
+          <Link href="/family/relatives/new" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
             <UserPlus size={16} />添加第一位家人
           </Link>
         )}
       </div>
 
-      <div className="px-4 py-6 max-w-3xl mx-auto space-y-6">
-        {/* ===== Overview Cards ===== */}
-        <div className="grid grid-cols-4 gap-3 -mt-12">
-          <OvCard label="家人" value={profiles.length} icon={<Users size={16} />} href="/family/members" />
-          <OvCard label="本月节点" value={reminderSummary?.monthCount ?? 0} icon={<Calendar size={16} />} href="/family/calendar" />
-          <OvCard label="待完善" value={unclaimedCount} icon={<TrendingUp size={16} />} tone="amber" />
-          <OvCard label="故事" value={memoryTotal} icon={<BookOpen size={16} />} href="/family/stories" />
+      <div className="px-4 py-6 max-w-3xl mx-auto space-y-5">
+        {/* ===== Family Motto ===== */}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <BookOpen size={15} className="text-amber-600" />
+                <span className="text-xs font-semibold text-amber-700 tracking-wide">家风家训</span>
+              </div>
+              {editingMotto ? (
+                <div className="space-y-2">
+                  <textarea value={motto} onChange={(e) => setMotto(e.target.value)} rows={2}
+                    placeholder="写下家族传承的一句话，如：诚信为本、耕读传家"
+                    className="w-full resize-none rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all" />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setEditingMotto(false); }}
+                      className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-500">取消</button>
+                    <button onClick={() => setEditingMotto(false)}
+                      className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">保存</button>
+                  </div>
+                </div>
+              ) : motto ? (
+                <p className="text-base text-stone-700 font-medium italic">&ldquo;{motto}&rdquo;</p>
+              ) : (
+                <p className="text-sm text-stone-400">从一段长辈故事中整理家风，点击右侧编辑</p>
+              )}
+            </div>
+            <button onClick={() => setEditingMotto((v) => !v)}
+              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-amber-500 hover:bg-amber-100 transition-colors">
+              <Edit3 size={14} />
+            </button>
+          </div>
         </div>
 
-        {/* ===== Core Quick Actions ===== */}
-        <section>
-          <h2 className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
-            <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />快捷操作
-          </h2>
-          <div className="grid grid-cols-4 gap-3">
-            <QALink href="/family/relatives/new" icon={<UserPlus size={18} strokeWidth={1.8} />} label="添加家人" />
-            <QALink href="/family/tree/graph" icon={<GitBranch size={18} strokeWidth={1.8} />} label="关系图" />
-            <QALink href="/family/calendar" icon={<Calendar size={18} strokeWidth={1.8} />} label="家庭节点" />
-            <QALink href="/family/stories" icon={<BookOpen size={18} strokeWidth={1.8} />} label="记故事" />
-          </div>
-        </section>
+        {/* ===== Core CTAs ===== */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <CTACard href="/family/relatives/new" icon={<UserPlus size={16} />} label="添加亲属" />
+          <CTACard href="/family/tree/graph" icon={<GitBranch size={16} />} label="家族关系图" />
+          <CTACard href="/family/invite" icon={<MailPlus size={16} />} label="邀请认领" sub={unclaimed.length > 0 ? `${unclaimed.length} 人待认领` : undefined} />
+          <CTACard href="/family/activity" icon={<Clock size={16} />} label="家族动态" />
+        </div>
 
-        {/* ===== My Family Preview ===== */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
-              <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />我的家人
-            </h2>
-            <Link href="/family/members" className="text-xs font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1">
-              查看全部 <ArrowRight size={12} />
-            </Link>
-          </div>
-          {!hasFamily ? (
-            <EmptyState
-              icon={<Users size={24} strokeWidth={1.8} />}
-              title="还没有家人档案"
-              description="添加父母、配偶或子女，开始建立家族关系"
-              action={<Link href="/family/relatives/new" className="inline-flex items-center gap-2 rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><UserPlus size={16} />添加家人</Link>}
-            />
-          ) : (
+        {/* ===== Unclaimed Members ===== */}
+        {unclaimed.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
+                <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />待认领亲属
+              </h2>
+              <Link href="/family/members?filter=unclaimed" className="text-xs font-medium text-amber-600 hover:text-amber-700">
+                查看全部 <ArrowRight size={12} className="inline" />
+              </Link>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {profiles.slice(0, 4).map((person) => (
-                <Link key={person.id} href={`/family/members/${person.id}`}
-                  className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md text-center">
-                  <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-base font-semibold ${
-                    person.claim_status === 'claimed' ? 'bg-emerald-950 text-white' : 'bg-stone-100 text-stone-500'
-                  }`}>
-                    {person.display_name.charAt(0)}
+              {unclaimed.slice(0, 4).map((p) => (
+                <Link key={p.id} href={`/family/members/${p.id}`}
+                  className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100 text-stone-500 text-base font-semibold">
+                    {p.display_name.charAt(0)}
                   </div>
-                  <p className="mt-2.5 truncate text-sm font-semibold text-stone-800">{person.display_name}</p>
-                  <p className="mt-0.5 text-xs text-stone-400">
-                    {GENDER_LABELS[person.gender ?? 'unknown']}
-                    {person.birth_year ? ` · ${person.birth_year}` : ''}
-                  </p>
-                  <div className="mt-2">
-                    <StatusBadge variant={person.claim_status === 'claimed' ? 'success' : 'warning'}>
-                      {person.claim_status === 'claimed' ? '已认领' : '待认领'}
-                    </StatusBadge>
+                  <p className="mt-2.5 truncate text-sm font-semibold text-stone-800">{p.display_name}</p>
+                  <div className="mt-1.5">
+                    <StatusBadge variant="warning">待认领</StatusBadge>
                   </div>
                 </Link>
               ))}
-              {profiles.length > 4 && (
-                <Link href="/family/members"
-                  className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center p-4 text-center transition-all hover:border-stone-400 hover:bg-white">
-                  <p className="text-2xl font-bold text-stone-400">+{profiles.length - 4}</p>
-                  <p className="mt-1 text-xs text-stone-400">更多家人</p>
-                </Link>
-              )}
             </div>
-          )}
+          </section>
+        )}
+
+        {/* ===== Deceased Memorial ===== */}
+        {deceased.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
+                <span className="h-3.5 w-[3px] rounded-full bg-stone-400/60" />已故亲人纪念
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {deceased.slice(0, 4).map((p) => (
+                <Link key={p.id} href={`/family/members/${p.id}`}
+                  className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-200 text-stone-500 text-base font-semibold">
+                    {p.display_name.charAt(0)}
+                  </div>
+                  <p className="mt-2.5 truncate text-sm font-semibold text-stone-800">{p.display_name}</p>
+                  <p className="mt-0.5 text-xs text-stone-400">
+                    {p.birth_year ? `${p.birth_year} - ${p.death_year || ''}` : ''}
+                  </p>
+                  <div className="mt-1.5">
+                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">生平纪念</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ===== Quick Actions ===== */}
+        <section>
+          <h2 className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
+            <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />常用功能
+          </h2>
+          <div className="grid grid-cols-4 gap-3">
+            <QALink href="/family/members" icon={<Users size={18} />} label="家人" />
+            <QALink href="/family/calendar" icon={<Calendar size={18} />} label="日历" />
+            <QALink href="/family/stories" icon={<BookOpen size={18} />} label="故事" />
+            <QALink href="/family/photos" icon={<Camera size={18} />} label="相册" />
+          </div>
         </section>
 
-        {/* ===== Recent Activity ===== */}
+        {/* ===== Recent Activity = Dual Column ===== */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
@@ -215,14 +221,7 @@ export default function FamilyPage() {
           </div>
         </section>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Reminders */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
-                <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />近期节点
-              </h2>
-              <Link href="/family/reminders" className="text-xs font-medium text-amber-600 hover:text-amber-700">全部</Link>
-            </div>
+          <div>
             {!reminderSummary || reminderSummary.upcoming.length === 0 ? (
               <div className="rounded-2xl border border-stone-200 bg-white px-4 py-8 text-center">
                 <p className="text-sm text-stone-400">暂无近期节点</p>
@@ -232,26 +231,16 @@ export default function FamilyPage() {
               <div className="rounded-2xl border border-stone-200 bg-white shadow-sm divide-y divide-stone-100">
                 {reminderSummary.upcoming.map((item) => (
                   <Link key={item.event.id} href={`/family/calendar/${item.event.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-stone-50 transition-colors first:rounded-t-2xl last:rounded-b-2xl">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-stone-800">{item.event.title}</p>
-                      <p className="text-xs text-stone-500">{formatDate(item.nextOccurrenceDate ?? item.event.event_date)} · {item.typeLabel}</p>
-                    </div>
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-stone-50 transition-colors">
+                    <div className="min-w-0"><p className="truncate text-sm font-medium text-stone-800">{item.event.title}</p>
+                      <p className="text-xs text-stone-500">{formatDate(item.nextOccurrenceDate ?? item.event.event_date)} · {item.typeLabel}</p></div>
                     <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">{item.badge}</span>
                   </Link>
                 ))}
               </div>
             )}
-          </section>
-
-          {/* Meetings */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
-                <span className="h-3.5 w-[3px] rounded-full bg-amber-500/60" />最近议事
-              </h2>
-              <Link href="/family/meetings" className="text-xs font-medium text-amber-600 hover:text-amber-700">全部</Link>
-            </div>
+          </div>
+          <div>
             {recentMeetings.length === 0 ? (
               <div className="rounded-2xl border border-stone-200 bg-white px-4 py-8 text-center">
                 <p className="text-sm text-stone-400">暂无议事记录</p>
@@ -268,29 +257,50 @@ export default function FamilyPage() {
                         {meeting.status === 'open' ? '进行中' : meeting.status === 'closed' ? '已关闭' : '已归档'}
                       </StatusBadge>
                     </div>
-                    {meeting.content?.trim() && (
-                      <p className="mt-1 text-xs text-stone-500 line-clamp-1">{meeting.content.trim()}</p>
-                    )}
                   </Link>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ===== Honor Wall ===== */}
+        {recentStories.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-stone-500 tracking-wide">
+                <Star size={14} className="text-amber-500" />家族记忆
+              </h2>
+              <Link href="/family/stories" className="text-xs font-medium text-amber-600 hover:text-amber-700">全部</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {recentStories.map((story) => (
+                <Link key={story.id} href="/family/stories"
+                  className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <h3 className="text-sm font-semibold text-stone-800">{story.title}</h3>
+                  <p className="mt-1 text-xs text-stone-500">{story.story_year ? `${story.story_year} 年` : ''}</p>
+                </Link>
+              ))}
+            </div>
           </section>
-        </div>
+        )}
 
-        {/* ===== Memory & Tools ===== */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <ToolCard href="/family/stories" icon={<BookOpen size={16} />} label="家族故事" sub={recentStories.length > 0 ? `${recentStories.length}+ 条` : '记录往事'} />
-          <ToolCard href="/family/photos" icon={<Camera size={16} />} label="家族相册" sub="珍藏照片" />
-          <ToolCard href="/family/statistics" icon={<TrendingUp size={16} />} label="数据看板" sub={`${completion}% 完整度`} />
-          <ToolCard href="/family/output" icon={<BookOpen size={16} />} label="成果物" sub="沉淀资料" />
-        </div>
-
-        {/* ===== Settings (subtle) ===== */}
-        <div className="text-center pt-2">
-          <Link href="/family/settings"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-stone-600 transition-colors">
-            <Settings size={13} strokeWidth={1.8} />家堂设置
+        {/* ===== Stats + Settings ===== */}
+        <div className="grid grid-cols-3 gap-3">
+          <Link href="/family/statistics" className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <TrendingUp size={18} className="mx-auto text-emerald-600 mb-1" />
+            <p className="text-xl font-bold text-stone-800">{completion}%</p>
+            <p className="text-xs text-stone-400">完整度</p>
+          </Link>
+          <Link href="/family/output" className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <BookOpen size={18} className="mx-auto text-emerald-600 mb-1" />
+            <p className="text-xl font-bold text-stone-800">{recentStories.length}</p>
+            <p className="text-xs text-stone-400">故事</p>
+          </Link>
+          <Link href="/family/settings" className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Settings size={18} className="mx-auto text-stone-400 mb-1" />
+            <p className="text-sm font-semibold text-stone-500 mt-1">家堂</p>
+            <p className="text-xs text-stone-400">设置</p>
           </Link>
         </div>
       </div>
@@ -298,47 +308,25 @@ export default function FamilyPage() {
   );
 }
 
-/* ===== Sub-components ===== */
-
-function OvCard({ label, value, icon, href, tone = 'default' }: {
-  label: string; value: number; icon: React.ReactNode; href?: string; tone?: 'default' | 'amber';
-}) {
-  const inner = (
-    <div className={`rounded-2xl border border-stone-200 bg-white p-3 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:shadow-md ${
-      tone === 'amber' ? 'border-amber-200 bg-amber-50/50' : ''
-    }`}>
-      <div className={`mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-xl ${
-        tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-700'
-      }`}>{icon}</div>
-      <p className="text-xl font-bold text-stone-800">{value}</p>
-      <p className="mt-0.5 text-[11px] text-stone-400">{label}</p>
-    </div>
-  );
-  if (href) return <Link href={href}>{inner}</Link>;
-  return inner;
+function C({ text }: { text: string }) {
+  return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }
 
-function QALink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+function CTACard({ href, icon, label, sub }: { href: string; icon: React.ReactNode; label: string; sub?: string }) {
   return (
-    <Link href={href}
-      className="flex flex-col items-center gap-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md active:scale-[0.98]">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div>
-      <span className="text-xs font-medium text-stone-700">{label}</span>
+    <Link href={href} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm text-center transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div>
+      <p className="mt-2 text-sm font-semibold text-stone-800">{label}</p>
+      {sub && <p className="mt-0.5 text-xs text-amber-600 font-medium">{sub}</p>}
     </Link>
   );
 }
 
-function ToolCard({ href, icon, label, sub }: { href: string; icon: React.ReactNode; label: string; sub: string }) {
+function QALink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
-    <Link href={href}
-      className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-stone-800 truncate">{label}</p>
-          <p className="text-xs text-stone-400">{sub}</p>
-        </div>
-      </div>
+    <Link href={href} className="flex flex-col items-center gap-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md active:scale-[0.98]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div>
+      <span className="text-xs font-medium text-stone-700">{label}</span>
     </Link>
   );
 }

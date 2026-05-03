@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Edit2, Calendar, BookOpen, Camera } from 'lucide-react';
+import { Edit2, Calendar, BookOpen, Camera, Clock, Plus, Mic, Image, UserCheck, Trash2 } from 'lucide-react';
 import type {
   BirthDatePrecision,
   FamilySpace,
@@ -27,6 +27,7 @@ import {
 } from '@/lib/services/member-service';
 import { syncPersonBirthdayEvent, unsyncPersonBirthdayEvent } from '@/lib/services/calendar-service';
 import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
+import { listBiographyRecords, createBiographyRecord, deleteBiographyRecord, formatEventDate, type BiographyRecord, type CreateBiographyInput } from '@/lib/services/biography-service';
 import AppHeader from '@/components/AppHeader';
 
 const CLAIM_LABELS: Record<string, string> = { claimed: '已认领', unclaimed: '待认领', disputed: '有争议' };
@@ -67,6 +68,11 @@ export default function MemberDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  // Biography state
+  const [biographies, setBiographies] = useState<BiographyRecord[]>([]);
+  const [showBioForm, setShowBioForm] = useState(false);
+  const [bioSubmitting, setBioSubmitting] = useState(false);
+  const [bioForm, setBioForm] = useState<{ title: string; content: string; eventYear: string; eventMonth: string; eventDay: string; location: string; visibility: CreateBiographyInput['visibility']; authorization: CreateBiographyInput['authorization'] }>({ title: '', content: '', eventYear: '', eventMonth: '', eventDay: '', location: '', visibility: 'family', authorization: 'self' });
   const [form, setForm] = useState({
     surname: '', givenName: '', displayName: '',
     gender: 'unknown' as Gender,
@@ -97,6 +103,8 @@ export default function MemberDetailPage() {
         setRelations(relationSummaries);
         setCanManage(allowed);
         setCanEditSelf(profile.bound_user_id === user.id);
+        // Load biography records
+        try { setBiographies(await listBiographyRecords(profile.id)); } catch { /* non-critical */ }
         setForm({
           surname: profile.surname ?? '', givenName: profile.given_name ?? '',
           displayName: profile.display_name, gender: profile.gender ?? 'unknown',
@@ -146,6 +154,45 @@ export default function MemberDetailPage() {
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : '保存失败');
     } finally { setSaving(false); }
+  }
+
+  // --- Biography handlers ---
+  async function handleCreateBio(e: React.FormEvent) {
+    e.preventDefault();
+    if (!person || !family || !bioForm.title.trim()) return;
+    try {
+      setBioSubmitting(true);
+      const record = await createBiographyRecord({
+        personId: person.id,
+        familyId: family.id,
+        title: bioForm.title.trim(),
+        content: bioForm.content.trim(),
+        eventYear: bioForm.eventYear ? parseInt(bioForm.eventYear, 10) : null,
+        eventMonth: bioForm.eventMonth ? parseInt(bioForm.eventMonth, 10) : null,
+        eventDay: bioForm.eventDay ? parseInt(bioForm.eventDay, 10) : null,
+        location: bioForm.location.trim() || null,
+        visibility: bioForm.visibility,
+        relationshipToPerson: canEditSelf ? null : '亲属',
+        authorization: canEditSelf ? 'self' : 'authorized',
+      });
+      setBiographies((cur) => [record, ...cur]);
+      setBioForm({ title: '', content: '', eventYear: '', eventMonth: '', eventDay: '', location: '', visibility: 'family', authorization: 'self' });
+      setShowBioForm(false);
+      setNotice('生平记录已保存');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '保存生平记录失败');
+    } finally { setBioSubmitting(false); }
+  }
+
+  async function handleDeleteBio(recordId: string) {
+    if (!window.confirm('确认删除这条生平记录？')) return;
+    try {
+      await deleteBiographyRecord(recordId);
+      setBiographies((cur) => cur.filter((b) => b.id !== recordId));
+      setNotice('生平记录已删除');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '删除失败');
+    }
   }
 
   if (loading) return <CenteredText text="加载中..." />;
@@ -298,6 +345,136 @@ export default function MemberDetailPage() {
                         <span className="text-sm text-stone-500 truncate">{item.otherPerson?.display_name ?? '未知成员'}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ===== Biography Timeline ===== */}
+            <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+              <div className="border-b border-stone-100 px-5 py-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-800">生平记录</h2>
+                  <p className="mt-0.5 text-xs text-stone-400">{biographies.length} 条记录</p>
+                </div>
+                <button onClick={() => setShowBioForm((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-950 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+                  <Plus size={14} />{showBioForm ? '收起' : '记一笔'}
+                </button>
+              </div>
+
+              {/* Elder-friendly quick actions */}
+              <div className="px-5 py-4 border-b border-stone-100">
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => { setBioForm({ ...bioForm, title: '说一段故事', content: '' }); setShowBioForm(true); }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                    <Mic size={14} />说一段故事
+                  </button>
+                  <button onClick={() => { setBioForm({ ...bioForm, title: '上传老照片', content: '' }); setShowBioForm(true); }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                    <Image size={14} />记一张照片
+                  </button>
+                  <button onClick={() => { setBioForm({ ...bioForm, title: '亲属回忆', content: '', authorization: 'authorized' }); setShowBioForm(true); }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors">
+                    <UserCheck size={14} />帮家人记录
+                  </button>
+                </div>
+              </div>
+
+              {/* Entry form */}
+              {showBioForm && (
+                <form onSubmit={handleCreateBio} className="border-b border-stone-100">
+                  <div className="px-5 py-4 space-y-3 bg-stone-50/50">
+                    <input type="text" value={bioForm.title} onChange={(e) => setBioForm({ ...bioForm, title: e.target.value })} required
+                      placeholder="标题，如：出生、考上大学、结婚"
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                    <div className="grid grid-cols-4 gap-2">
+                      <input type="number" value={bioForm.eventYear} onChange={(e) => setBioForm({ ...bioForm, eventYear: e.target.value })}
+                        placeholder="年份" min={1800} max={2100}
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                      <input type="number" value={bioForm.eventMonth} onChange={(e) => setBioForm({ ...bioForm, eventMonth: e.target.value })}
+                        placeholder="月" min={1} max={12}
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                      <input type="number" value={bioForm.eventDay} onChange={(e) => setBioForm({ ...bioForm, eventDay: e.target.value })}
+                        placeholder="日" min={1} max={31}
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                      <select value={bioForm.visibility} onChange={(e) => setBioForm({ ...bioForm, visibility: e.target.value as CreateBiographyInput['visibility'] })}
+                        className="rounded-xl border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                        <option value="family">家族可见</option>
+                        <option value="private">仅自己</option>
+                        <option value="direct_family">直系亲属</option>
+                      </select>
+                    </div>
+                    <input type="text" value={bioForm.location} onChange={(e) => setBioForm({ ...bioForm, location: e.target.value })}
+                      placeholder="地点，可选（如：北京、老家）"
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                    <textarea value={bioForm.content} onChange={(e) => setBioForm({ ...bioForm, content: e.target.value })} rows={4}
+                      placeholder="一段文字，记录这件事"
+                      className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                    <div className="flex gap-3">
+                      <button type="button" onClick={() => setShowBioForm(false)}
+                        className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
+                      <button type="submit" disabled={bioSubmitting || !bioForm.title.trim()}
+                        className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-colors">
+                        {bioSubmitting ? '保存中...' : '保存记录'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Timeline */}
+              <div className="p-5">
+                {biographies.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100 text-stone-400 mb-3">
+                      <Clock size={22} strokeWidth={1.8} />
+                    </div>
+                    <p className="text-sm font-medium text-stone-600">还没有生平记录</p>
+                    <p className="mt-1 text-xs text-stone-400">点击&ldquo;记一笔&rdquo;，为{person.display_name}记录重要时刻</p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Timeline vertical line */}
+                    <div className="absolute left-[15px] top-2 bottom-2 w-px bg-stone-200" />
+                    <div className="space-y-3">
+                      {biographies.map((record) => (
+                        <div key={record.id} className="relative flex gap-4 pl-1">
+                          {/* Timeline dot */}
+                          <div className={`relative z-10 mt-1.5 flex h-[8px] w-[8px] shrink-0 rounded-full border-2 border-white ${
+                            record.authorization === 'self' ? 'bg-emerald-500' :
+                            record.authorization === 'deceased_manager' ? 'bg-stone-500' : 'bg-amber-400'
+                          }`} />
+                          <div className="flex-1 pb-2">
+                            <div className="rounded-xl border border-stone-200 bg-white p-3.5 shadow-sm">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-semibold text-stone-800">{record.title}</h4>
+                                  <p className="mt-0.5 text-xs text-stone-400">
+                                    {formatEventDate(record)}
+                                    {record.location ? ` · ${record.location}` : ''}
+                                  </p>
+                                </div>
+                                {(canManage || record.recorded_by === person.bound_user_id) && (
+                                  <button onClick={() => handleDeleteBio(record.id)}
+                                    className="shrink-0 text-stone-300 hover:text-red-400 transition-colors" title="删除">
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                              {record.content && (
+                                <p className="mt-2 text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">{record.content}</p>
+                              )}
+                              {record.relationship_to_person && (
+                                <p className="mt-2 text-xs text-stone-400">
+                                  由{record.relationship_to_person}代录
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

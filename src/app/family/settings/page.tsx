@@ -7,7 +7,7 @@ import type { FamilyMemberStats, UserFamilyRole } from '@/types/service';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { canManageFamily, getUserFamilyRole } from '@/lib/auth/permission-service';
-import { hasSupabaseConfig } from '@/lib/supabase/client';
+import { hasSupabaseConfig, createSupabaseServiceClient } from '@/lib/supabase/client';
 import { getCurrentFamilySpace, getFamilyDashboardStats, updateFamilySettings } from '@/lib/services/family-service';
 import AppHeader from '@/components/AppHeader';
 
@@ -24,6 +24,8 @@ export default function FamilySettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [elderMode, setElderMode] = useState(false);
+  const [togglingElder, setTogglingElder] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -36,6 +38,12 @@ export default function FamilySettingsPage() {
         const [familyStats, userRole, allowed] = await Promise.all([getFamilyDashboardStats(currentFamily.id), getUserFamilyRole(currentFamily.id), canManageFamily(currentFamily.id)]);
         setFamily(currentFamily); setStats(familyStats); setRole(userRole); setCanManage(allowed);
         setDisplayName(currentFamily.displayName); setVisibility(currentFamily.visibility);
+        // Read elder_mode from current user profile
+        try {
+          const supabase = createSupabaseServiceClient();
+          const profileResult = await supabase.from<{ elder_mode: boolean }>('profiles').select('elder_mode').eq('id', user.id);
+          if (profileResult.data?.[0]) setElderMode(profileResult.data[0].elder_mode ?? false);
+        } catch { /* ignore — elder mode is a convenience feature */ }
       } catch (e) { setError(e instanceof Error ? e.message : '加载设置失败'); }
       finally { setLoading(false); }
     }
@@ -100,6 +108,55 @@ export default function FamilySettingsPage() {
             {[['成员总数',stats?.totalPersons ?? 0],['已认领',stats?.claimedPersons ?? 0],['待认领',stats?.unclaimedPersons ?? 0],['在世',stats?.alivePersons ?? 0],['已故',stats?.deceasedPersons ?? 0]].map(([l,v]) => (
               <div key={l} className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3"><p className="text-xs text-stone-400">{l}</p><p className="mt-0.5 text-xl font-bold text-emerald-700">{v as number}</p></div>
             ))}
+          </div>
+        </div>
+
+        {/* Elder mode */}
+        <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+          <div className="border-b border-stone-100 px-5 py-4">
+            <h2 className="text-base font-semibold text-stone-800">长辈模式</h2>
+          </div>
+          <div className="px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-stone-700">大字版</p>
+                <p className="text-xs text-stone-400 mt-0.5">启用后按钮和文字会变大，更适合长辈使用</p>
+              </div>
+              <button
+                type="button"
+                disabled={togglingElder}
+                onClick={async () => {
+                  setTogglingElder(true);
+                  try {
+                    const supabase = createSupabaseServiceClient();
+                    const user = await getCurrentUser();
+                    if (!user) return;
+                    const next = !elderMode;
+                    await supabase.from('profiles').update({ elder_mode: next }).eq('id', user.id);
+                    setElderMode(next);
+                  } catch { /* ignore */ }
+                  finally { setTogglingElder(false); }
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${elderMode ? 'bg-emerald-600' : 'bg-stone-300'}`}
+                role="switch"
+                aria-checked={elderMode}
+              >
+                <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${elderMode ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Account */}
+        <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+          <div className="border-b border-stone-100 px-5 py-4">
+            <h2 className="text-base font-semibold text-stone-800">账号</h2>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <p className="text-xs text-stone-400">账号注销功能将在下一版本开放。如需删除数据，请联系家堂管理员。</p>
+            <button disabled className="w-full rounded-xl bg-stone-100 py-2.5 text-sm font-medium text-stone-400 cursor-not-allowed">
+              注销账号（开发中）
+            </button>
           </div>
         </div>
 

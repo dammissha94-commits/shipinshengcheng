@@ -86,3 +86,33 @@ select {
 .pb-safe {
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
+
+/* Elder mode: larger fonts, bigger tap targets */
+.elder-mode {
+  font-size: 18px;
+}
+
+.elder-mode button,
+.elder-mode a[role="button"],
+.elder-mode .btn {
+  min-height: 48px;
+  min-width: 48px;
+  font-size: 17px;
+}
+
+.elder-mode input,
+.elder-mode select,
+.elder-mode textarea {
+  font-size: 17px;
+  padding: 12px 16px;
+}
+
+.elder-mode h1 { font-size: 1.75rem; }
+.elder-mode h2 { font-size: 1.35rem; }
+.elder-mode h3 { font-size: 1.15rem; }
+
+.elder-mode .text-xs { font-size: 14px; }
+.elder-mode .text-sm { font-size: 16px; }
+.elder-mode .text-base { font-size: 18px; }
+.elder-mode .text-\[11px\] { font-size: 14px; }
+.elder-mode .text-\[10px\] { font-size: 13px; }
