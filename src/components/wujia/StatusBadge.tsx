@@ -12,8 +12,8 @@ interface StatusBadgeProps {
 }
 
 const VARIANT_CLASSES: Record<StatusVariant, string> = {
-  default: 'bg-emerald-50 text-emerald-700',
-  success: 'bg-emerald-50 text-emerald-700',
+  default: 'bg-#F0E6D5 text-#8D6E63',
+  success: 'bg-#F0E6D5 text-#8D6E63',
   warning: 'bg-amber-50 text-amber-700',
   muted: 'bg-stone-100 text-stone-500',
   danger: 'bg-red-50 text-red-600',

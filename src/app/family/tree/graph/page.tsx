@@ -128,12 +128,12 @@ export default function GenealogyGraphPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-50">
+    <div className="flex min-h-screen flex-col bg-[#F8F1E7]">
       <AppHeader title="家族关系图" backHref="/family/tree" />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-3 px-4 py-4">
         {/* Header card */}
-        <div className="rounded-2xl bg-emerald-950 p-4 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-4 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族关系图</p>
           <h1 className="mt-0.5 text-lg font-bold">{family ? family.displayName ?? family.display_name : '加载中...'}</h1>
           <p className="mt-1 text-xs text-white/55">
@@ -144,11 +144,11 @@ export default function GenealogyGraphPage() {
         {/* Quick links */}
         <div className="grid grid-cols-3 gap-2">
           <Link href="/family/tree"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-[#F8F1E7] transition-colors">
             <Network size={14} />返回三代谱
           </Link>
           <Link href="/family/members"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-#5A3524 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
             <Users size={14} />成员列表
           </Link>
           <Link href="/family/statistics"
@@ -165,7 +165,7 @@ export default function GenealogyGraphPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={15} />
               <input value={searchKeyword} onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="搜索家人姓名"
-                className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-9 pr-9 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-9 pr-9 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
               {searchKeyword && (
                 <button type="button" onClick={clearHighlight}
                   className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100"
@@ -177,7 +177,7 @@ export default function GenealogyGraphPage() {
 
             {/* Search results */}
             {searchKeyword.trim() && (
-              <div className="rounded-xl border border-stone-200 bg-stone-50 p-2">
+              <div className="rounded-xl border border-stone-200 bg-[#F8F1E7] p-2">
                 {searchResults.length === 0 ? (
                   <p className="px-2 py-2 text-sm text-stone-400">未找到相关家人</p>
                 ) : (
@@ -187,7 +187,7 @@ export default function GenealogyGraphPage() {
                         className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-stone-700 hover:bg-white transition-colors">
                         <span><span className="font-medium">{r.label}</span>
                           {r.relationHint && <span className="ml-2 text-xs text-stone-400">{r.relationHint}</span>}</span>
-                        <LocateFixed size={14} className="text-emerald-700" />
+                        <LocateFixed size={14} className="text-#8D6E63" />
                       </button>
                     ))}
                   </div>
@@ -197,9 +197,9 @@ export default function GenealogyGraphPage() {
 
             {/* Selected node */}
             {selectedNodeId && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm">
-                <span className="text-emerald-800 font-medium">已定位：{selectedNodeLabel || '家人'}</span>
-                <Link href={`/family/members/${selectedNodeId}`} className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-#F0E6D5 px-4 py-2.5 text-sm">
+                <span className="text-#6D4C41 font-medium">已定位：{selectedNodeLabel || '家人'}</span>
+                <Link href={`/family/members/${selectedNodeId}`} className="text-xs font-semibold text-#8D6E63 hover:text-#6D4C41">
                   查看档案 &rarr;
                 </Link>
               </div>
@@ -215,7 +215,7 @@ export default function GenealogyGraphPage() {
                     <button key={rt} type="button" onClick={() => toggleRelationFilter(rt)}
                       className={cn(
                         'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
-                        active ? 'border-emerald-950 bg-emerald-950 text-white' : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300'
+                        active ? 'border-#5A3524 bg-#5A3524 text-white' : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300'
                       )}>
                       {active && <Check size={12} />}
                       {getGraphRelationLabel(rt)}
@@ -228,15 +228,15 @@ export default function GenealogyGraphPage() {
             {/* Action buttons */}
             <div className="grid grid-cols-3 gap-2">
               <button type="button" onClick={() => setFitViewSignal((v) => v + 1)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors">
                 <LocateFixed size={13} />适应全图
               </button>
               <button type="button" onClick={clearHighlight} disabled={!selectedNodeId && !searchKeyword}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-40 transition-colors">
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-[#F8F1E7] disabled:opacity-40 transition-colors">
                 <X size={13} />清除高亮
               </button>
               <button type="button" onClick={resetFilters} disabled={isDefaultRelationFilter(relationFilters)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-40 transition-colors">
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2 text-xs font-medium text-stone-600 hover:bg-[#F8F1E7] disabled:opacity-40 transition-colors">
                 <RotateCcw size={13} />重置筛选
               </button>
             </div>
@@ -285,13 +285,13 @@ export default function GenealogyGraphPage() {
         <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
           <p className="mb-2 text-xs font-semibold text-stone-500">图例</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-stone-500">
-            <LegendDot className="bg-emerald-950" label="已认领" />
+            <LegendDot className="bg-#5A3524" label="已认领" />
             <LegendDot className="bg-amber-500" label="待认领" />
-            <LegendDot className="bg-emerald-950/30" label="在世" />
+            <LegendDot className="bg-#5A3524/30" label="在世" />
             <LegendDot className="bg-stone-800/40" label="已故" />
             {RELATION_FILTERS.map((rt) => (
               <LegendLine key={rt}
-                className={rt === 'spouse_of' ? 'bg-amber-500' : 'bg-emerald-700'}
+                className={rt === 'spouse_of' ? 'bg-amber-500' : 'bg-#8D6E63'}
                 dashed={rt !== 'parent_of' && rt !== 'child_of'}
                 label={getGraphRelationLabel(rt)}
                 muted={!relationFilters[rt]} />

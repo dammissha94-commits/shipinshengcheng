@@ -86,9 +86,9 @@ export default function MeetingsPage() {
   if (error && !family) return <S r={null}><P text={error} /></S>;
 
   return (
-    <S r={canCreateMeeting ? <button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:bg-stone-200" aria-label="新增议题"><MessageSquarePlus size={17} /></button> : null}>
+    <S r={canCreateMeeting ? <button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 hover:bg-stone-200" aria-label="新增议题"><MessageSquarePlus size={17} /></button> : null}>
       <main className="mx-auto max-w-lg px-4 py-6">
-        <div className="mb-5 rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族议事</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">{meetings.length} 条议题</p>
@@ -107,20 +107,20 @@ export default function MeetingsPage() {
               <div className="space-y-4 px-5 py-5">
                 <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">类型</span>
                   <select value={form.meetingType} onChange={(e) => setForm({ ...form, meetingType: e.target.value as MeetingType })}
-                    className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+                    className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
                     {TYPE_FILTERS.filter((t) => t.value !== 'all').map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
                 </label>
                 <F label="标题" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
                 <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">内容</span>
                   <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4}
-                    className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                    className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
                 </label>
                 <F label="日期" type="date" value={form.eventDate} onChange={(v) => setForm({ ...form, eventDate: v })} />
                 <VS value={form.visibility} onChange={(v) => setForm({ ...form, visibility: v })} />
               </div>
               <div className="border-t border-stone-100 px-5 py-4 flex gap-3">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
-                <button disabled={!form.title.trim() || submitting} className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '发布中...' : '发布'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
+                <button disabled={!form.title.trim() || submitting} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '发布中...' : '发布'}</button>
               </div>
             </div>
           </form>
@@ -135,7 +135,7 @@ export default function MeetingsPage() {
           {TYPE_FILTERS.map((t) => (
             <button key={t.value} type="button" onClick={() => setFilter(t.value)}
               className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-                filter === t.value ? 'bg-emerald-950 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'
+                filter === t.value ? 'bg-#5A3524 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'
               }`}>{t.label}</button>
           ))}
         </div>
@@ -154,7 +154,7 @@ export default function MeetingsPage() {
                   <p className="line-clamp-3 text-sm text-stone-500">{meeting.content?.trim() || '暂无内容'}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-stone-400">
                     <span>{formatDate(meeting.event_date)}</span>
-                    <span className={`${meeting.status === 'open' ? 'text-emerald-600' : meeting.status === 'closed' ? 'text-stone-500' : 'text-stone-400'} font-medium`}>{meetingStatusLabel(meeting.status)}</span>
+                    <span className={`${meeting.status === 'open' ? 'text-#8B5A3C' : meeting.status === 'closed' ? 'text-stone-500' : 'text-stone-400'} font-medium`}>{meetingStatusLabel(meeting.status)}</span>
                   </div>
                 </article>
               </Link>
@@ -167,10 +167,10 @@ export default function MeetingsPage() {
 }
 
 function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) {
-  return <div className="min-h-screen bg-stone-50"><AppHeader title="家族议事" backHref="/family" rightElement={r} />{children}</div>;
+  return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="家族议事" backHref="/family" rightElement={r} />{children}</div>;
 }
 function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }
 function P({ text }: { text: string }) {
   return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>;
@@ -178,11 +178,11 @@ function P({ text }: { text: string }) {
 function F({ label, value, onChange, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span>
     <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>;
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
 }
 function VS({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">可见范围</span>
     <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
       {VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
 }

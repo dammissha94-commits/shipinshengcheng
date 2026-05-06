@@ -69,7 +69,7 @@ export default function FamilyRemindersPage() {
   return (
     <S>
       <main className="mx-auto max-w-lg px-4 py-6">
-        <div className="mb-5 rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家庭节点提醒</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">{totalCount} 条近期提醒</p>
@@ -78,8 +78,8 @@ export default function FamilyRemindersPage() {
         {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
 
         <div className="mb-5 grid grid-cols-2 gap-3">
-          <Link href="/family/calendar" className="flex items-center justify-center gap-2 rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><Calendar size={15} />去日历添加</Link>
-          <Link href="/family/members" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">查看家人</Link>
+          <Link href="/family/calendar" className="flex items-center justify-center gap-2 rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors"><Calendar size={15} />去日历添加</Link>
+          <Link href="/family/members" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors">查看家人</Link>
         </div>
 
         {!hasAny ? (
@@ -115,14 +115,14 @@ function RS({ title, items, people }: { title: string; items: FamilyReminderItem
             return (
               <article key={`${title}-${item.event.id}`} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                 <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0"><h3 className="text-base font-semibold text-stone-800">{item.event.title}</h3><p className="mt-1 text-xs text-stone-500">原始：{formatDate(item.event.event_date)} · {item.typeLabel}</p>{showNext && <p className="mt-0.5 text-xs text-emerald-700">下一次：{formatDate(item.nextOccurrenceDate)}</p>}</div>
+                  <div className="min-w-0"><h3 className="text-base font-semibold text-stone-800">{item.event.title}</h3><p className="mt-1 text-xs text-stone-500">原始：{formatDate(item.event.event_date)} · {item.typeLabel}</p>{showNext && <p className="mt-0.5 text-xs text-#8D6E63">下一次：{formatDate(item.nextOccurrenceDate)}</p>}</div>
                   <StatusBadge>{item.badge}</StatusBadge>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {item.isRecurringYearly && <StatusBadge>每年重复</StatusBadge>}
                   {item.isAutoBirthday && <StatusBadge variant="warning">自动生日</StatusBadge>}
-                  {relatedPerson && <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-emerald-700">查看档案</Link>}
-                  <Link href={`/family/calendar/${item.event.id}`} className="ml-auto text-xs font-medium text-emerald-700">详情</Link>
+                  {relatedPerson && <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-#8D6E63">查看档案</Link>}
+                  <Link href={`/family/calendar/${item.event.id}`} className="ml-auto text-xs font-medium text-#8D6E63">详情</Link>
                 </div>
               </article>
             );
@@ -133,6 +133,6 @@ function RS({ title, items, people }: { title: string; items: FamilyReminderItem
   );
 }
 
-function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-stone-50"><AppHeader title="提醒中心" backHref="/family" />{children}</div>; }
-function C({ text }: { text: string }) { return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>; }
+function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="提醒中心" backHref="/family" />{children}</div>; }
+function C({ text }: { text: string }) { return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>; }
 function P({ text }: { text: string }) { return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>; }

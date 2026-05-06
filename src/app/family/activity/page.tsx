@@ -113,16 +113,16 @@ export default function ActivityPage() {
   const lastUpdate = logs.length > 0 ? formatFullDate(logs[0].created_at) : null;
 
   if (loading) {
-    return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
+    return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
   }
   if (error && !family) {
-    return <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
+    return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
   }
 
   const isLowData = filteredLogs.length > 0 && filteredLogs.length <= 3;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="家族动态" backHref="/family" />
 
       <div className="px-4 py-5 max-w-2xl mx-auto space-y-4 sm:space-y-5">
@@ -148,7 +148,7 @@ export default function ActivityPage() {
               onClick={() => setFilter(f.value)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 filter === f.value
-                  ? 'bg-emerald-950 text-white shadow-sm'
+                  ? 'bg-#5A3524 text-white shadow-sm'
                   : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700'
               }`}
             >
@@ -169,7 +169,7 @@ export default function ActivityPage() {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-base font-semibold text-stone-800">该分类暂无动态</p>
               <p className="mt-1 text-sm text-stone-500">切换其他分类查看，或等待该模块产生新变化</p>
-              <button onClick={() => setFilter('all')} className="mt-4 text-sm font-medium text-emerald-700">查看全部动态</button>
+              <button onClick={() => setFilter('all')} className="mt-4 text-sm font-medium text-#8D6E63">查看全部动态</button>
             </div>
           )
         ) : (
@@ -202,12 +202,12 @@ export default function ActivityPage() {
                           <div key={log.id} className="relative flex gap-3 sm:gap-4 pl-2">
                             {/* Timeline dot */}
                             <div className={`relative z-10 mt-1.5 flex h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] shrink-0 rounded-full border-2 border-white ${
-                              category === 'member' ? 'bg-emerald-500' :
+                              category === 'member' ? 'bg-#F0E6D50' :
                               category === 'story' ? 'bg-amber-500' :
                               category === 'photo' ? 'bg-emerald-400' :
                               category === 'calendar' ? 'bg-amber-400' :
                               category === 'meeting' ? 'bg-stone-400' :
-                              category === 'output' ? 'bg-emerald-600' :
+                              category === 'output' ? 'bg-#8B5A3C' :
                               'bg-stone-300'
                             }`} />
 
@@ -244,7 +244,7 @@ export default function ActivityPage() {
             {isLowData && (
               <div className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm">
                 <div className="flex gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
                     <Activity size={17} strokeWidth={1.8} />
                   </div>
                   <div>
@@ -273,7 +273,7 @@ export default function ActivityPage() {
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 shadow-sm text-center">
-      <p className="text-xl sm:text-2xl font-bold text-emerald-900">{value}</p>
+      <p className="text-xl sm:text-2xl font-bold text-#4E342E">{value}</p>
       <p className="mt-0.5 text-[11px] sm:text-xs text-stone-400">{label}</p>
     </div>
   );

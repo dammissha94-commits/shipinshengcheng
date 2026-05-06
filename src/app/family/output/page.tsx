@@ -95,7 +95,7 @@ export default function OutputPage() {
   return (
     <S>
       <main className="mx-auto max-w-lg px-4 py-6 space-y-6">
-        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">成果物中心</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">{outputs.length} 条预览记录 · 将家族关系和记忆整理为长期资料</p>
@@ -111,9 +111,9 @@ export default function OutputPage() {
           </div>
           <div className="p-5 space-y-3">
             {PRODUCT_TYPES.map((type) => (
-              <div key={type} className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+              <div key={type} className="rounded-xl border border-stone-200 bg-[#F8F1E7] p-4">
                 <div className="mb-3 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
                     <FileIcon />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -126,7 +126,7 @@ export default function OutputPage() {
                 </div>
                 <button type="button" onClick={() => generatePreview(type)}
                   disabled={!canGenerate || submittingType !== null}
-                  className="w-full rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]">
+                  className="w-full rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-#4E342E disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]">
                   {submittingType === type ? '生成中...' : '生成预览'}
                 </button>
               </div>
@@ -159,7 +159,7 @@ export default function OutputPage() {
                     <h3 className="text-base font-semibold text-stone-800">{output.title}</h3>
                     <p className="mt-1 text-xs text-stone-500">{OUTPUT_TYPE_LABELS[output.output_type]} · {VISIBILITY_LABELS[output.visibility]} · {formatDate(output.created_at)}</p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">{STATUS_LABELS[output.status]}</span>
+                  <span className="shrink-0 rounded-full bg-#F0E6D5 px-2.5 py-0.5 text-[11px] font-medium text-#8D6E63">{STATUS_LABELS[output.status]}</span>
                 </div>
                 {output.description && <p className="mb-3 text-sm text-stone-500">{output.description}</p>}
                 <PreviewSummary type={output.output_type} preview={output.preview_data ?? {}} />
@@ -173,10 +173,10 @@ export default function OutputPage() {
 }
 
 function S({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-stone-50"><AppHeader title="成果物" backHref="/family" />{children}</div>;
+  return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="成果物" backHref="/family" />{children}</div>;
 }
 function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }
 function P({ text }: { text: string }) {
   return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>;
@@ -188,17 +188,17 @@ function PreviewSummary({ type, preview }: { type: FamilyOutputType; preview: Re
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-1.5">
           {[['家堂',preview.familyName],['姓氏',preview.surname],['已录入',`${preview.totalPersons} 人`],['已认领',`${preview.claimedPersons} 人`],['待认领',`${preview.unclaimedPersons} 人`],['在世',`${preview.alivePersons} 人`],['已故',`${preview.deceasedPersons} 人`],['关系',`${preview.relationCount} 条`]].map(([l,v]) => (
-            <div key={l as string} className="rounded-lg bg-stone-50 px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l as string}</span><span className="text-[11px] font-medium text-stone-700">{v as string}</span></div>
+            <div key={l as string} className="rounded-lg bg-[#F8F1E7] px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l as string}</span><span className="text-[11px] font-medium text-stone-700">{v as string}</span></div>
           ))}
         </div>
         {(['grandparents','parents','selfAndSiblings','children'] as const).map((key) => {
           const names: Record<string,string> = { grandparents:'祖辈', parents:'父母', selfAndSiblings:'本人/配偶/兄弟姐妹', children:'子女' };
           const people = preview.generations[key] as { id:string; name:string }[];
           return (
-            <div key={key} className="rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+            <div key={key} className="rounded-lg border border-stone-100 bg-[#F8F1E7] p-2.5">
               <p className="text-[11px] font-medium text-stone-400 mb-1.5">{names[key]}</p>
               {people.length === 0 ? <p className="text-[11px] text-stone-300">暂未录入</p>
-                : <div className="flex flex-wrap gap-1.5">{people.map((p) => <span key={p.id} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">{p.name}</span>)}</div>}
+                : <div className="flex flex-wrap gap-1.5">{people.map((p) => <span key={p.id} className="rounded-full bg-#F0E6D5 px-2 py-0.5 text-[11px] font-medium text-#8D6E63">{p.name}</span>)}</div>}
             </div>
           );
         })}
@@ -206,13 +206,13 @@ function PreviewSummary({ type, preview }: { type: FamilyOutputType; preview: Re
     );
   }
   if (type === 'family_memory_book' && isMemoryPreview(preview)) {
-    return <div className="grid grid-cols-2 gap-1.5">{[['故事',`${preview.storyCount} 条`],['相册',`${preview.photoCount} 条`]].map(([l,v]) => <div key={l} className="rounded-lg bg-stone-50 px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l}</span><span className="text-[11px] font-medium text-stone-700">{v}</span></div>)}</div>;
+    return <div className="grid grid-cols-2 gap-1.5">{[['故事',`${preview.storyCount} 条`],['相册',`${preview.photoCount} 条`]].map(([l,v]) => <div key={l} className="rounded-lg bg-[#F8F1E7] px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l}</span><span className="text-[11px] font-medium text-stone-700">{v}</span></div>)}</div>;
   }
   if (type === 'family_story_book' && isStoryPreview(preview)) {
-    return <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">共 {preview.storyCount} 条故事</p><p className="mt-1 line-clamp-2 text-sm text-stone-700">{preview.storyTitles.length > 0 ? preview.storyTitles.join('、') : '暂无故事条目'}</p></div>;
+    return <div className="rounded-lg bg-[#F8F1E7] p-3"><p className="text-xs text-stone-500">共 {preview.storyCount} 条故事</p><p className="mt-1 line-clamp-2 text-sm text-stone-700">{preview.storyTitles.length > 0 ? preview.storyTitles.join('、') : '暂无故事条目'}</p></div>;
   }
   if (type === 'family_yearbook' && isYearbookPreview(preview)) {
-    return <div className="grid grid-cols-2 gap-1.5">{[['年度',`${preview.year}`],['成员',`${preview.personCount} 位`],['故事',`${preview.storyCount} 条`],['相册',`${preview.photoCount} 条`]].map(([l,v]) => <div key={l} className="rounded-lg bg-stone-50 px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l}</span><span className="text-[11px] font-medium text-stone-700">{v}</span></div>)}</div>;
+    return <div className="grid grid-cols-2 gap-1.5">{[['年度',`${preview.year}`],['成员',`${preview.personCount} 位`],['故事',`${preview.storyCount} 条`],['相册',`${preview.photoCount} 条`]].map(([l,v]) => <div key={l} className="rounded-lg bg-[#F8F1E7] px-3 py-1.5 flex justify-between"><span className="text-[11px] text-stone-400">{l}</span><span className="text-[11px] font-medium text-stone-700">{v}</span></div>)}</div>;
   }
   return <p className="text-xs text-stone-400">暂无预览摘要</p>;
 }

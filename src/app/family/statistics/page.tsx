@@ -49,9 +49,9 @@ export default function FamilyStatisticsPage() {
     load();
   }, [router]);
 
-  if (state === 'loading') return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">加载中...</p></div>;
+  if (state === 'loading') return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">加载中...</p></div>;
   if (state === 'error') return <S><P text={error || '加载失败'} /></S>;
-  if (state === 'empty' || !family || !statistics || !completion) return <S><main className="max-w-lg mx-auto px-4 py-6"><div className="rounded-2xl border border-stone-200 bg-white p-6 text-center"><p className="text-sm text-stone-500">暂无可统计的家人档案，请先添加亲属。</p><Link href="/family/relatives/new" className="mt-4 inline-flex rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">添加亲属</Link></div></main></S>;
+  if (state === 'empty' || !family || !statistics || !completion) return <S><main className="max-w-lg mx-auto px-4 py-6"><div className="rounded-2xl border border-stone-200 bg-white p-6 text-center"><p className="text-sm text-stone-500">暂无可统计的家人档案，请先添加亲属。</p><Link href="/family/relatives/new" className="mt-4 inline-flex rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">添加亲属</Link></div></main></S>;
 
   const claimRate = percent(statistics.claimedPersons, statistics.totalPersons);
   const memoryTotal = statistics.totalStories + statistics.totalPhotos + statistics.totalMeetings;
@@ -60,7 +60,7 @@ export default function FamilyStatisticsPage() {
     <S>
       <main className="mx-auto max-w-lg space-y-4 px-4 py-6">
         {/* Header */}
-        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家堂数据看板</p>
           <h1 className="mt-0.5 text-xl font-bold">{family.displayName ?? family.display_name}</h1>
           <div className="mt-4 grid grid-cols-3 gap-2">
@@ -86,13 +86,13 @@ export default function FamilyStatisticsPage() {
           <div className="grid grid-cols-3 gap-2">
             <MS label="在世" value={statistics.alivePersons} /><MS label="已故" value={statistics.deceasedPersons} /><MS label="未知" value={statistics.unknownLivingPersons} />
           </div>
-          <div className="mt-4"><div className="mb-1 flex items-center justify-between text-xs text-stone-500"><span>已认领 / 待认领</span><span>{claimRate}%</span></div><div className="flex h-3 overflow-hidden rounded-full bg-stone-200"><div className="bg-emerald-950" style={{ width: `${percent(statistics.claimedPersons, statistics.totalPersons)}%` }} /><div className="bg-amber-500" style={{ width: `${percent(statistics.unclaimedPersons, statistics.totalPersons)}%` }} /></div></div>
+          <div className="mt-4"><div className="mb-1 flex items-center justify-between text-xs text-stone-500"><span>已认领 / 待认领</span><span>{claimRate}%</span></div><div className="flex h-3 overflow-hidden rounded-full bg-stone-200"><div className="bg-#5A3524" style={{ width: `${percent(statistics.claimedPersons, statistics.totalPersons)}%` }} /><div className="bg-amber-500" style={{ width: `${percent(statistics.unclaimedPersons, statistics.totalPersons)}%` }} /></div></div>
         </SC>
 
         <SC title={<><Network size={16} />关系完整度</>}>
           <div className="space-y-3">
             {[['父母/子女关系',statistics.parentRelations],['配偶关系',statistics.spouseRelations],['兄弟姐妹关系',statistics.siblingRelations],['祖辈关系',statistics.grandparentRelations]].map(([l,v]) => (
-              <div key={l as string}><div className="mb-1 flex items-center justify-between text-xs"><span className="text-stone-500">{l as string}</span><span className="font-medium text-stone-700">{v as number}</span></div><div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${percent(v as number, statistics.totalRelations)}%` }} /></div></div>
+              <div key={l as string}><div className="mb-1 flex items-center justify-between text-xs"><span className="text-stone-500">{l as string}</span><span className="font-medium text-stone-700">{v as number}</span></div><div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-#8D6E63" style={{ width: `${percent(v as number, statistics.totalRelations)}%` }} /></div></div>
             ))}
           </div>
         </SC>
@@ -115,12 +115,12 @@ export default function FamilyStatisticsPage() {
         </SC>
 
         <SC title={<><CheckCircle2 size={16} />完整度</>}>
-          <div className="rounded-xl bg-stone-50 p-4">
-            <div className="mb-2 flex items-center justify-between text-sm"><span className="font-medium text-stone-700">当前完成度</span><span className="font-semibold text-emerald-700">{completion.score}%</span></div>
-            <div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${completion.score}%` }} /></div>
+          <div className="rounded-xl bg-[#F8F1E7] p-4">
+            <div className="mb-2 flex items-center justify-between text-sm"><span className="font-medium text-stone-700">当前完成度</span><span className="font-semibold text-#8D6E63">{completion.score}%</span></div>
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-#8D6E63" style={{ width: `${completion.score}%` }} /></div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {completion.completedItems.slice(0, 6).map((item) => <span key={item} className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">{item}</span>)}
+            {completion.completedItems.slice(0, 6).map((item) => <span key={item} className="rounded-full bg-#F0E6D5 px-2.5 py-1 text-xs text-#8D6E63">{item}</span>)}
           </div>
         </SC>
 
@@ -130,21 +130,21 @@ export default function FamilyStatisticsPage() {
         </SC>
 
         <div className="grid grid-cols-2 gap-2 pb-4">
-          <Link href="/family/tree/graph" className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"><Network size={14} />查看关系图</Link>
-          <Link href="/family/output" className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><FileText size={14} />生成成果物</Link>
+          <Link href="/family/tree/graph" className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors"><Network size={14} />查看关系图</Link>
+          <Link href="/family/output" className="flex items-center justify-center gap-1.5 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors"><FileText size={14} />生成成果物</Link>
         </div>
       </main>
     </S>
   );
 }
 
-function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-stone-50"><AppHeader title="数据看板" backHref="/family" />{children}</div>; }
+function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="数据看板" backHref="/family" />{children}</div>; }
 function P({ text }: { text: string }) { return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>; }
 function HM({ label, value }: { label: string; value: number | string }) { return <div className="rounded-2xl bg-white/10 px-3 py-2"><p className="text-xs text-white/50">{label}</p><p className="mt-1 text-lg font-bold">{value}</p></div>; }
 function MC({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div><p className="text-xs text-stone-500">{label}</p><p className="mt-1 text-xl font-bold text-stone-800">{value}</p></div>;
+  return <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"><div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">{icon}</div><p className="text-xs text-stone-500">{label}</p><p className="mt-1 text-xl font-bold text-stone-800">{value}</p></div>;
 }
 function SC({ title, children, className }: { title: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return <div className={cn('rounded-2xl border border-stone-200 bg-white p-4 shadow-sm', className)}><div className="flex items-center gap-2 mb-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">{title}</span></div>{children}</div>;
+  return <div className={cn('rounded-2xl border border-stone-200 bg-white p-4 shadow-sm', className)}><div className="flex items-center gap-2 mb-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-#F0E6D5 text-#8D6E63">{title}</span></div>{children}</div>;
 }
-function MS({ label, value }: { label: string; value: number }) { return <div className="rounded-xl bg-stone-50 px-3 py-2"><p className="text-xs text-stone-400">{label}</p><p className="mt-1 text-lg font-semibold text-stone-700">{value}</p></div>; }
+function MS({ label, value }: { label: string; value: number }) { return <div className="rounded-xl bg-[#F8F1E7] px-3 py-2"><p className="text-xs text-stone-400">{label}</p><p className="mt-1 text-lg font-semibold text-stone-700">{value}</p></div>; }

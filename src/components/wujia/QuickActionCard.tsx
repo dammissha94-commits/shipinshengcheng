@@ -19,7 +19,7 @@ interface QuickActionCardProps {
 }
 
 const BADGE_CLASSES = {
-  default: 'bg-emerald-50 text-emerald-700',
+  default: 'bg-#F0E6D5 text-#8D6E63',
   amber: 'bg-amber-50 text-amber-700',
 } as const;
 
@@ -58,12 +58,12 @@ export default function QuickActionCard({
       )}
 
       {icon && (
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
           {icon}
         </div>
       )}
 
-      <h3 className="text-sm font-semibold text-stone-800 group-hover:text-emerald-900">
+      <h3 className="text-sm font-semibold text-stone-800 group-hover:text-#4E342E">
         {title}
       </h3>
 

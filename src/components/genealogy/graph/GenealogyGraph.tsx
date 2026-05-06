@@ -137,7 +137,7 @@ function GenealogyGraphInner({
             'absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-full border px-3 py-1.5 text-xs shadow-sm',
             errorMessage
               ? 'border-red-200 bg-red-50 text-red-700'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-emerald-200 bg-#F0E6D5 text-#8D6E63'
           )}
         >
           <button type="button" onClick={resetError} className="mr-2 opacity-70" aria-label="关闭提示">

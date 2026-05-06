@@ -63,7 +63,7 @@ export default function FamilySettingsPage() {
   if (!family) return <C text="请先创建数字家堂" />;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="家堂设置" backHref="/family" />
       <main className="px-4 py-5 max-w-lg mx-auto space-y-4">
         {/* Info card */}
@@ -83,17 +83,17 @@ export default function FamilySettingsPage() {
               <RF label="名称" value={family.name} />
               <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">显示名称</span>
                 <input disabled={!canManage} value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all disabled:opacity-60" /></label>
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all disabled:opacity-60" /></label>
               <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">可见范围</span>
                 <select disabled={!canManage} value={visibility} onChange={(e) => setVisibility(e.target.value as Visibility)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all disabled:opacity-60">
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all disabled:opacity-60">
                   <option value="private">仅自己</option><option value="family">家族可见</option><option value="public">公开</option></select></label>
               <RF label="家堂类型" value={family.family_type} />
               <RF label="状态" value={family.status} />
             </div>
             <div className="border-t border-stone-100 px-5 py-4">
               {canManage ? (
-                <button disabled={saving} className="w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-60 transition-all active:scale-[0.98]">{saving ? '保存中...' : '保存设置'}</button>
+                <button disabled={saving} className="w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-60 transition-all active:scale-[0.98]">{saving ? '保存中...' : '保存设置'}</button>
               ) : (
                 <p className="text-xs text-stone-400 text-center">普通成员只能查看家堂基础信息。</p>
               )}
@@ -106,7 +106,7 @@ export default function FamilySettingsPage() {
           <div className="border-b border-stone-100 px-5 py-4"><h2 className="text-base font-semibold text-stone-800">成员统计</h2></div>
           <div className="grid grid-cols-2 gap-3 p-5">
             {[['成员总数',stats?.totalPersons ?? 0],['已认领',stats?.claimedPersons ?? 0],['待认领',stats?.unclaimedPersons ?? 0],['在世',stats?.alivePersons ?? 0],['已故',stats?.deceasedPersons ?? 0]].map(([l,v]) => (
-              <div key={l} className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3"><p className="text-xs text-stone-400">{l}</p><p className="mt-0.5 text-xl font-bold text-emerald-700">{v as number}</p></div>
+              <div key={l} className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3"><p className="text-xs text-stone-400">{l}</p><p className="mt-0.5 text-xl font-bold text-#8D6E63">{v as number}</p></div>
             ))}
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function FamilySettingsPage() {
                   } catch { /* ignore */ }
                   finally { setTogglingElder(false); }
                 }}
-                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${elderMode ? 'bg-emerald-600' : 'bg-stone-300'}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${elderMode ? 'bg-#8B5A3C' : 'bg-stone-300'}`}
                 role="switch"
                 aria-checked={elderMode}
               >
@@ -174,8 +174,8 @@ export default function FamilySettingsPage() {
 }
 
 function RF({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3"><p className="text-xs text-stone-400">{label}</p><p className="mt-0.5 text-sm font-medium text-stone-800">{value}</p></div>;
+  return <div className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3"><p className="text-xs text-stone-400">{label}</p><p className="mt-0.5 text-sm font-medium text-stone-800">{value}</p></div>;
 }
 function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }

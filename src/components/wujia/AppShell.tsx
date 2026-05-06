@@ -27,7 +27,7 @@ export default function AppShell({
   className,
 }: AppShellProps) {
   return (
-    <div className={cn('min-h-screen bg-stone-50', className)}>
+    <div className={cn('min-h-screen bg-[#F8F1E7]', className)}>
       {header}
       <div
         className={cn(

@@ -105,7 +105,7 @@ function CreateForm() {
 
       {/* Preview card */}
       {trimmedSurname && (
-        <div className="rounded-2xl bg-emerald-950 p-5 text-center text-white shadow-lg">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-center text-white shadow-lg">
           <p className="text-xs text-white/50 tracking-widest">预览</p>
           <p className="mt-1 text-xl font-bold tracking-wide">{displayName}</p>
           {name && <p className="mt-1 text-sm text-white/60">创建人：{name}</p>}
@@ -132,7 +132,7 @@ function CreateForm() {
                 onChange={(e) => setSurname(e.target.value)}
                 placeholder="如：王、李、张"
                 maxLength={4}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all duration-200"
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200"
               />
             </div>
 
@@ -147,7 +147,7 @@ function CreateForm() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="请输入你的姓名"
                 maxLength={20}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all duration-200"
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200"
               />
             </div>
 
@@ -162,7 +162,7 @@ function CreateForm() {
                     onClick={() => setGender(val)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
                       gender === val
-                        ? 'bg-emerald-950 text-white border-emerald-950 shadow-sm'
+                        ? 'bg-#5A3524 text-white border-#5A3524 shadow-sm'
                         : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400'
                     }`}
                   >
@@ -180,7 +180,7 @@ function CreateForm() {
               <select
                 value={birthYear}
                 onChange={(e) => setBirthYear(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all duration-200 appearance-none"
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200 appearance-none"
               >
                 <option value="">不填写</option>
                 {YEARS.map((y) => (
@@ -203,7 +203,7 @@ function CreateForm() {
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="w-full h-12 rounded-xl bg-emerald-950 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-900 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]"
+              className="w-full h-12 rounded-xl bg-#5A3524 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-#4E342E disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]"
             >
               {submitting ? '创建中…' : '立即创建'}
             </button>
@@ -217,7 +217,7 @@ function CreateForm() {
         <div className="space-y-3">
           {NEXT_STEPS.map((step, i) => (
             <div key={step.label} className="flex gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-#F0E6D5 text-xs font-semibold text-#8D6E63">
                 {i + 1}
               </div>
               <div>
@@ -234,7 +234,7 @@ function CreateForm() {
 
 export default function CreatePage() {
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="创建家堂" backHref="/" />
       <Suspense
         fallback={

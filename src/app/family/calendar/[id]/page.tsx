@@ -84,7 +84,7 @@ export default function FamilyCalendarEventDetailPage() {
 
   if (loading) return <S><P text="加载中…" /></S>;
   if (!hasSupabaseConfig()) return <S><P text="尚未配置 Supabase 环境变量，请先配置 .env.local" /></S>;
-  if (!detail) return <S><P text={error || '家庭节点不存在或已不可访问'} footer={<div className="mt-4 grid grid-cols-2 gap-2"><Link href="/family/calendar" className="rounded-xl border border-stone-200 bg-white py-2.5 text-center text-sm font-medium text-stone-600">返回日历</Link><Link href="/family/reminders" className="rounded-xl bg-emerald-950 py-2.5 text-center text-sm font-semibold text-white">返回提醒中心</Link></div>} /></S>;
+  if (!detail) return <S><P text={error || '家庭节点不存在或已不可访问'} footer={<div className="mt-4 grid grid-cols-2 gap-2"><Link href="/family/calendar" className="rounded-xl border border-stone-200 bg-white py-2.5 text-center text-sm font-medium text-stone-600">返回日历</Link><Link href="/family/reminders" className="rounded-xl bg-#5A3524 py-2.5 text-center text-sm font-semibold text-white">返回提醒中心</Link></div>} /></S>;
 
   const event = detail.event;
   const relatedPerson = detail.relatedPerson ?? detail.sourcePerson;
@@ -97,7 +97,7 @@ export default function FamilyCalendarEventDetailPage() {
     <S>
       <main className="mx-auto max-w-lg px-4 py-6 space-y-4">
         {/* Header */}
-        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家庭节点详情</p>
           <h1 className="mt-0.5 text-xl font-bold">{event.title}</h1>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -110,13 +110,13 @@ export default function FamilyCalendarEventDetailPage() {
         </div>
 
         {error && <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
-        {notice && <p className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700">{notice}</p>}
+        {notice && <p className="rounded-xl bg-#F0E6D5 border border-emerald-200 px-4 py-2.5 text-sm text-#8D6E63">{notice}</p>}
 
         {isAutoBirthday && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm font-semibold text-stone-800">自动生日提醒</p>
             <p className="mt-1 text-xs text-stone-500">该提醒来自家人档案中的生日信息，日期与重复规则会随家人档案自动同步。</p>
-            {personRedirectHref && <Link href={personRedirectHref} className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">前往家人档案修改生日</Link>}
+            {personRedirectHref && <Link href={personRedirectHref} className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">前往家人档案修改生日</Link>}
           </div>
         )}
 
@@ -127,7 +127,7 @@ export default function FamilyCalendarEventDetailPage() {
             {[['标题',event.title],['类型',getEventTypeLabel(event.event_type)],['原始日期',formatDate(event.event_date)],['重复规则',RECURRENCE_LABELS[event.recurrence]??event.recurrence],['可见范围',VISIBILITY_LABELS[event.visibility]??event.visibility],['状态',isArchived?'已归档':'进行中'],['创建时间',formatDateTime(event.created_at)],['更新时间',formatDateTime(event.updated_at)]].map(([l,v]) => (
               <div key={l} className="flex items-start justify-between gap-3"><dt className="shrink-0 text-xs text-stone-400">{l}</dt><dd className="text-right text-sm text-stone-700">{v as string}</dd></div>
             ))}
-            {showNext && <div className="flex items-start justify-between gap-3"><dt className="shrink-0 text-xs text-stone-400">下一次</dt><dd className="text-right text-sm text-emerald-700 font-medium">{formatDate(occurrence.nextOccurrenceDate)}</dd></div>}
+            {showNext && <div className="flex items-start justify-between gap-3"><dt className="shrink-0 text-xs text-stone-400">下一次</dt><dd className="text-right text-sm text-#8D6E63 font-medium">{formatDate(occurrence.nextOccurrenceDate)}</dd></div>}
             {event.description && <div className="pt-2"><p className="text-xs text-stone-400">说明</p><p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">{event.description}</p></div>}
           </dl>
         </div>
@@ -137,7 +137,7 @@ export default function FamilyCalendarEventDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-stone-800">提醒设置</h2>
           <div className="grid grid-cols-3 gap-2">
             {([['D-7',event.remind_d7],['D-1',event.remind_d1],['当天',event.remind_day]] as [string,boolean][]).map(([l,a]) => (
-              <span key={l} className={`flex items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium ${a ? 'border-emerald-950 bg-emerald-950 text-white' : 'border-stone-200 bg-white text-stone-400'}`}>{l}</span>
+              <span key={l} className={`flex items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium ${a ? 'border-#5A3524 bg-#5A3524 text-white' : 'border-stone-200 bg-white text-stone-400'}`}>{l}</span>
             ))}
           </div>
           <p className="mt-3 text-xs text-stone-400">当前提醒：{reminderLabel(detail)}</p>
@@ -149,7 +149,7 @@ export default function FamilyCalendarEventDetailPage() {
             <h2 className="mb-3 text-sm font-semibold text-stone-800">关联人物</h2>
             <div className="flex items-center justify-between gap-3">
               <div><p className="text-base font-semibold text-stone-800">{relatedPerson.display_name}</p><p className="text-xs text-stone-400">家人档案</p></div>
-              {personHref && <Link href={personHref} className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">查看档案</Link>}
+              {personHref && <Link href={personHref} className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors">查看档案</Link>}
             </div>
           </div>
         )}
@@ -157,13 +157,13 @@ export default function FamilyCalendarEventDetailPage() {
         {/* Edit */}
         {permission?.canEdit ? canShowEditForm ? (
           <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
-            <div className="border-b border-stone-100 px-5 py-4 flex items-center justify-between"><h2 className="text-base font-semibold text-stone-800">编辑</h2><button type="button" onClick={() => { setShowEdit((v) => !v); if (showEdit) setForm(buildForm(detail)); }} className="text-sm font-medium text-emerald-700">{showEdit ? '取消' : '展开'}</button></div>
+            <div className="border-b border-stone-100 px-5 py-4 flex items-center justify-between"><h2 className="text-base font-semibold text-stone-800">编辑</h2><button type="button" onClick={() => { setShowEdit((v) => !v); if (showEdit) setForm(buildForm(detail)); }} className="text-sm font-medium text-#8D6E63">{showEdit ? '取消' : '展开'}</button></div>
             {showEdit && (
               <form onSubmit={handleSave} className="space-y-4 px-5 py-5">
                 <SF label="类型" value={form.eventType} options={EVENT_TYPE_OPTIONS} onChange={(v) => setForm({ ...form, eventType: v })} />
                 <F label="标题" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
                 <F label="日期" type="date" value={form.eventDate} onChange={(v) => setForm({ ...form, eventDate: v })} required />
-                <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">说明</span><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>
+                <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">说明</span><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>
                 <SF label="可见范围" value={form.visibility} options={VISIBILITY_OPTIONS} onChange={(v) => setForm({ ...form, visibility: v })} />
                 <fieldset><legend className="text-sm font-medium text-stone-700 mb-2">提醒设置</legend>
                   <div className="grid grid-cols-3 gap-2">
@@ -172,8 +172,8 @@ export default function FamilyCalendarEventDetailPage() {
                     <Toggle label="当天" checked={form.remindDay} onChange={(v) => setForm({ ...form, remindDay: v })} />
                   </div></fieldset>
                 <div className="flex gap-3 pt-1">
-                  <button type="button" onClick={() => { setShowEdit(false); setForm(buildForm(detail)); }} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
-                  <button type="submit" disabled={submitting || !form.title.trim() || !form.eventDate} className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中…' : '保存修改'}</button>
+                  <button type="button" onClick={() => { setShowEdit(false); setForm(buildForm(detail)); }} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
+                  <button type="submit" disabled={submitting || !form.title.trim() || !form.eventDate} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中…' : '保存修改'}</button>
                 </div>
               </form>
             )}
@@ -183,22 +183,22 @@ export default function FamilyCalendarEventDetailPage() {
 
         {/* Actions */}
         <div className="space-y-2 pb-4">
-          {permission?.canArchive && !isArchived && <button type="button" onClick={handleArchive} disabled={archiving} className="w-full rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-50 transition-colors">{archiving ? '归档中…' : '归档此节点'}</button>}
-          <Link href="/family/calendar" className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><ArrowLeft size={14} />返回家族日历</Link>
+          {permission?.canArchive && !isArchived && <button type="button" onClick={handleArchive} disabled={archiving} className="w-full rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-[#F8F1E7] disabled:opacity-50 transition-colors">{archiving ? '归档中…' : '归档此节点'}</button>}
+          <Link href="/family/calendar" className="flex items-center justify-center gap-1.5 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors"><ArrowLeft size={14} />返回家族日历</Link>
         </div>
       </main>
     </S>
   );
 }
 
-function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-stone-50"><AppHeader title="节点详情" backHref="/family/calendar" />{children}</div>; }
+function S({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="节点详情" backHref="/family/calendar" />{children}</div>; }
 function P({ text, footer }: { text: string; footer?: React.ReactNode }) { return <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p>{footer}</main>; }
 function F({ label, value, onChange, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean }) {
-  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span><input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>;
+  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span><input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
 }
 function SF<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
-  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}</span><select value={value} onChange={(e) => onChange(e.target.value as T)} className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">{options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
+  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}</span><select value={value} onChange={(e) => onChange(e.target.value as T)} className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">{options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
 }
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return <label className={`flex cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium transition-all ${checked ? 'border-emerald-950 bg-emerald-950 text-white' : 'border-stone-200 bg-white text-stone-500'}`}><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />{label}</label>;
+  return <label className={`flex cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium transition-all ${checked ? 'border-#5A3524 bg-#5A3524 text-white' : 'border-stone-200 bg-white text-stone-500'}`}><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />{label}</label>;
 }

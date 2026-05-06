@@ -15,7 +15,7 @@ import AppHeader from '@/components/AppHeader';
 import StatusBadge from '@/components/wujia/StatusBadge';
 
 const EVENT_TYPE_LABELS: Record<CalendarEventType, string> = { birthday: '生日', anniversary: '纪念日', family_gathering: '家庭聚会', family_task: '家庭事项' };
-const EVENT_TYPE_COLORS: Record<CalendarEventType, string> = { birthday: 'bg-amber-50 text-amber-700', anniversary: 'bg-emerald-50 text-emerald-700', family_gathering: 'bg-emerald-50 text-emerald-700', family_task: 'bg-stone-100 text-stone-600' };
+const EVENT_TYPE_COLORS: Record<CalendarEventType, string> = { birthday: 'bg-amber-50 text-amber-700', anniversary: 'bg-#F0E6D5 text-#8D6E63', family_gathering: 'bg-#F0E6D5 text-#8D6E63', family_task: 'bg-stone-100 text-stone-600' };
 const TYPE_FILTERS: { value: CalendarEventType | 'all'; label: string }[] = [
   { value: 'all', label: '全部' }, { value: 'birthday', label: '生日' }, { value: 'anniversary', label: '纪念日' }, { value: 'family_gathering', label: '家庭聚会' }, { value: 'family_task', label: '家庭事项' },
 ];
@@ -104,9 +104,9 @@ export default function FamilyCalendarPage() {
   if (error && !family) return <S r={null}><P text={error} /></S>;
 
   return (
-    <S r={<button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:bg-stone-200" aria-label="新增"><Plus size={18} strokeWidth={2.5} /></button>}>
+    <S r={<button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 hover:bg-stone-200" aria-label="新增"><Plus size={18} strokeWidth={2.5} /></button>}>
       <main className="mx-auto max-w-lg px-4 py-6">
-        <div className="mb-5 rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族日历</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">{events.length} 个家庭节点 · 生日、纪念日与家庭事项</p>
@@ -140,7 +140,7 @@ export default function FamilyCalendarPage() {
                 <F label="日期" type="date" value={form.eventDate} onChange={(v) => setForm({ ...form, eventDate: v })} required />
                 <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">说明</span>
                   <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
-                    className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>
+                    className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>
                 <SF label="重复" value={form.recurrence} options={RECURRENCE_OPTIONS} onChange={(v) => setForm({ ...form, recurrence: v })} />
                 <fieldset><legend className="text-sm font-medium text-stone-700 mb-2">提醒</legend>
                   <div className="grid grid-cols-3 gap-2">
@@ -151,8 +151,8 @@ export default function FamilyCalendarPage() {
                 <SF label="可见范围" value={form.visibility} options={VISIBILITY_OPTIONS} onChange={(v) => setForm({ ...form, visibility: v })} />
               </div>
               <div className="border-t border-stone-100 px-5 py-4 flex gap-3">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
-                <button disabled={!form.title.trim() || !form.eventDate || submitting} className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : '保存'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
+                <button disabled={!form.title.trim() || !form.eventDate || submitting} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : '保存'}</button>
               </div>
             </div>
           </form>
@@ -162,7 +162,7 @@ export default function FamilyCalendarPage() {
         <div className="mb-4 flex gap-2 overflow-x-auto">
           {TYPE_FILTERS.map((t) => (
             <button key={t.value} type="button" onClick={() => setFilter(t.value)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filter === t.value ? 'bg-emerald-950 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>{t.label}</button>
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filter === t.value ? 'bg-#5A3524 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>{t.label}</button>
           ))}
         </div>
 
@@ -171,7 +171,7 @@ export default function FamilyCalendarPage() {
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-stone-400"><Bell size={24} strokeWidth={1.8} /></div>
             <p className="text-base font-semibold text-stone-800">还没有日历记录</p>
             <p className="mt-1 text-sm text-stone-500">添加生日、纪念日或家庭事项</p>
-            <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">新增家庭节点</button>
+            <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">新增家庭节点</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -182,18 +182,18 @@ export default function FamilyCalendarPage() {
               return (
                 <article key={event.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                   <div className="mb-2 flex items-start justify-between gap-3">
-                    <div className="min-w-0"><h3 className="text-base font-semibold text-stone-800">{event.title}</h3><p className="mt-1 text-xs text-stone-500">原始：{formatDate(event.event_date)} · {occurrence.reminderBadge}</p>{occurrence.isRecurringYearly && occurrence.nextOccurrenceDate !== null && occurrence.nextOccurrenceDate !== event.event_date && <p className="mt-0.5 text-xs text-emerald-700">下一次：{formatDate(occurrence.nextOccurrenceDate)}</p>}</div>
+                    <div className="min-w-0"><h3 className="text-base font-semibold text-stone-800">{event.title}</h3><p className="mt-1 text-xs text-stone-500">原始：{formatDate(event.event_date)} · {occurrence.reminderBadge}</p>{occurrence.isRecurringYearly && occurrence.nextOccurrenceDate !== null && occurrence.nextOccurrenceDate !== event.event_date && <p className="mt-0.5 text-xs text-#8D6E63">下一次：{formatDate(occurrence.nextOccurrenceDate)}</p>}</div>
                     <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${typeColor}`}>{EVENT_TYPE_LABELS[event.event_type]}</span>
                   </div>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {occurrence.isRecurringYearly && <StatusBadge>每年重复</StatusBadge>}
-                    {event.source_type === 'person_birthday' && <><StatusBadge variant="warning">自动生日</StatusBadge>{relatedPerson && <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-emerald-700">查看档案</Link>}</>}
+                    {event.source_type === 'person_birthday' && <><StatusBadge variant="warning">自动生日</StatusBadge>{relatedPerson && <Link href={`/family/members/${relatedPerson.id}`} className="text-xs font-medium text-#8D6E63">查看档案</Link>}</>}
                   </div>
                   {event.description && <p className="mb-3 line-clamp-2 text-sm text-stone-500">{event.description}</p>}
                   <div className="flex items-center justify-between gap-3 border-t border-stone-100 pt-3 text-xs text-stone-400">
                     <span>提醒：{reminderText(event)}</span>
                     <div className="flex shrink-0 items-center gap-3">
-                      <Link href={`/family/calendar/${event.id}`} className="font-medium text-emerald-700">详情</Link>
+                      <Link href={`/family/calendar/${event.id}`} className="font-medium text-#8D6E63">详情</Link>
                       <button type="button" onClick={() => handleArchive(event.id)} disabled={archivingId === event.id} className="font-medium text-stone-400 hover:text-stone-600 disabled:opacity-50">{archivingId === event.id ? '处理中...' : '归档'}</button>
                     </div>
                   </div>
@@ -207,21 +207,21 @@ export default function FamilyCalendarPage() {
   );
 }
 
-function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) { return <div className="min-h-screen bg-stone-50"><AppHeader title="家族日历" backHref="/family" rightElement={r} />{children}</div>; }
-function C({ text }: { text: string }) { return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>; }
+function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) { return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="家族日历" backHref="/family" rightElement={r} />{children}</div>; }
+function C({ text }: { text: string }) { return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>; }
 function P({ text }: { text: string }) { return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>; }
 function F({ label, value, onChange, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span>
     <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>;
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
 }
 function SF<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}</span>
     <select value={value} onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
 }
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return <label className={`flex cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium transition-all ${checked ? 'border-emerald-950 bg-emerald-950 text-white' : 'border-stone-200 bg-white text-stone-500'}`}>
+  return <label className={`flex cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-xs font-medium transition-all ${checked ? 'border-#5A3524 bg-#5A3524 text-white' : 'border-stone-200 bg-white text-stone-500'}`}>
     <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />{label}</label>;
 }

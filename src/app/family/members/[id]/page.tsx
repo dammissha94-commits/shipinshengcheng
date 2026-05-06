@@ -203,13 +203,13 @@ export default function MemberDetailPage() {
   const isClaimed = person.claim_status === 'claimed';
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader
         title="家人档案"
         backHref="/family/members"
         rightElement={
           canEdit ? (
-            <button onClick={() => setEditing((v) => !v)} className="text-sm font-medium text-emerald-700">
+            <button onClick={() => setEditing((v) => !v)} className="text-sm font-medium text-#8D6E63">
               {editing ? '取消' : <span className="flex items-center gap-1"><Edit2 size={14} />编辑</span>}
             </button>
           ) : null
@@ -221,7 +221,7 @@ export default function MemberDetailPage() {
         <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-4">
             <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-bold ${
-              person.bound_user_id ? 'bg-emerald-950 text-white' : 'bg-stone-100 text-stone-500'
+              person.bound_user_id ? 'bg-#5A3524 text-white' : 'bg-stone-100 text-stone-500'
             }`}>
               {person.display_name.charAt(0)}
             </div>
@@ -229,7 +229,7 @@ export default function MemberDetailPage() {
               <h1 className="text-xl font-bold text-stone-900">{person.display_name}</h1>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                  isClaimed ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  isClaimed ? 'bg-#F0E6D5 text-#8D6E63' : 'bg-amber-50 text-amber-700'
                 }`}>{CLAIM_LABELS[person.claim_status]}</span>
                 <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
                   {LIVING_LABELS[person.living_status]}
@@ -240,7 +240,7 @@ export default function MemberDetailPage() {
         </div>
 
         {error && <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
-        {notice && <p className="rounded-xl bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700 border border-emerald-200">{notice}</p>}
+        {notice && <p className="rounded-xl bg-#F0E6D5 px-4 py-2.5 text-sm text-#8D6E63 border border-emerald-200">{notice}</p>}
 
         {editing ? (
           <form onSubmit={handleSave} className="rounded-2xl border border-stone-200 bg-white shadow-sm">
@@ -260,7 +260,7 @@ export default function MemberDetailPage() {
                   <SelectField label="可见范围" value={form.visibility} onChange={(v) => setForm({ ...form, visibility: v as Visibility })} options={[['private','仅自己'],['family','家族可见'],['public','公开']]} />
                 </>
               )}
-              <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3">
+              <div className="rounded-xl border border-stone-200 bg-[#F8F1E7] p-4 space-y-3">
                 <p className="text-sm font-semibold text-stone-700">生日提醒</p>
                 <Field label="出生年份" type="number" value={form.birthYear} onChange={(v) => setForm({ ...form, birthYear: v })} />
                 <Field label="出生月份" type="number" value={form.birthMonth} onChange={(v) => setForm({ ...form, birthMonth: v })} />
@@ -272,11 +272,11 @@ export default function MemberDetailPage() {
               <label className="block">
                 <span className="block text-sm font-medium text-stone-700 mb-1.5">家人简介</span>
                 <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={4}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
               </label>
             </div>
             <div className="border-t border-stone-100 px-5 py-4">
-              <button disabled={saving} className="w-full h-11 rounded-xl bg-emerald-950 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-900 disabled:opacity-50 active:scale-[0.98]">
+              <button disabled={saving} className="w-full h-11 rounded-xl bg-#5A3524 text-sm font-semibold text-white shadow-sm transition-all hover:bg-#4E342E disabled:opacity-50 active:scale-[0.98]">
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>
@@ -300,7 +300,7 @@ export default function MemberDetailPage() {
                   ['认领状态', CLAIM_LABELS[person.claim_status]],
                   ['可见范围', VISIBILITY_LABELS[person.visibility]],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl border border-stone-100 bg-stone-50 px-3 py-2.5">
+                  <div key={label} className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-3 py-2.5">
                     <p className="text-xs text-stone-400">{label}</p>
                     <p className="mt-0.5 text-sm font-medium text-stone-800 truncate">{value}</p>
                   </div>
@@ -340,7 +340,7 @@ export default function MemberDetailPage() {
                 ) : (
                   <div className="space-y-2">
                     {relations.map((item) => (
-                      <div key={item.relation.id} className="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-4 py-2.5">
+                      <div key={item.relation.id} className="flex items-center justify-between gap-3 rounded-xl bg-[#F8F1E7] px-4 py-2.5">
                         <span className="text-sm font-medium text-stone-700">{relationSummaryLabel(item, person.id)}</span>
                         <span className="text-sm text-stone-500 truncate">{item.otherPerson?.display_name ?? '未知成员'}</span>
                       </div>
@@ -358,7 +358,7 @@ export default function MemberDetailPage() {
                   <p className="mt-0.5 text-xs text-stone-400">{biographies.length} 条记录</p>
                 </div>
                 <button onClick={() => setShowBioForm((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-950 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+                  className="flex items-center gap-1.5 rounded-xl bg-#5A3524 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
                   <Plus size={14} />{showBioForm ? '收起' : '记一笔'}
                 </button>
               </div>
@@ -367,11 +367,11 @@ export default function MemberDetailPage() {
               <div className="px-5 py-4 border-b border-stone-100">
                 <div className="grid grid-cols-3 gap-2">
                   <button onClick={() => { setBioForm({ ...bioForm, title: '说一段故事', content: '' }); setShowBioForm(true); }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors">
                     <Mic size={14} />说一段故事
                   </button>
                   <button onClick={() => { setBioForm({ ...bioForm, title: '上传老照片', content: '' }); setShowBioForm(true); }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-medium text-stone-600 hover:bg-[#F8F1E7] transition-colors">
                     <Image size={14} />记一张照片
                   </button>
                   <button onClick={() => { setBioForm({ ...bioForm, title: '亲属回忆', content: '', authorization: 'authorized' }); setShowBioForm(true); }}
@@ -384,22 +384,22 @@ export default function MemberDetailPage() {
               {/* Entry form */}
               {showBioForm && (
                 <form onSubmit={handleCreateBio} className="border-b border-stone-100">
-                  <div className="px-5 py-4 space-y-3 bg-stone-50/50">
+                  <div className="px-5 py-4 space-y-3 bg-[#F8F1E7]/50">
                     <input type="text" value={bioForm.title} onChange={(e) => setBioForm({ ...bioForm, title: e.target.value })} required
                       placeholder="标题，如：出生、考上大学、结婚"
-                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
                     <div className="grid grid-cols-4 gap-2">
                       <input type="number" value={bioForm.eventYear} onChange={(e) => setBioForm({ ...bioForm, eventYear: e.target.value })}
                         placeholder="年份" min={1800} max={2100}
-                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20" />
                       <input type="number" value={bioForm.eventMonth} onChange={(e) => setBioForm({ ...bioForm, eventMonth: e.target.value })}
                         placeholder="月" min={1} max={12}
-                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20" />
                       <input type="number" value={bioForm.eventDay} onChange={(e) => setBioForm({ ...bioForm, eventDay: e.target.value })}
                         placeholder="日" min={1} max={31}
-                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" />
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20" />
                       <select value={bioForm.visibility} onChange={(e) => setBioForm({ ...bioForm, visibility: e.target.value as CreateBiographyInput['visibility'] })}
-                        className="rounded-xl border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                        className="rounded-xl border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20">
                         <option value="family">家族可见</option>
                         <option value="private">仅自己</option>
                         <option value="direct_family">直系亲属</option>
@@ -407,15 +407,15 @@ export default function MemberDetailPage() {
                     </div>
                     <input type="text" value={bioForm.location} onChange={(e) => setBioForm({ ...bioForm, location: e.target.value })}
                       placeholder="地点，可选（如：北京、老家）"
-                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
                     <textarea value={bioForm.content} onChange={(e) => setBioForm({ ...bioForm, content: e.target.value })} rows={4}
                       placeholder="一段文字，记录这件事"
-                      className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                      className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
                     <div className="flex gap-3">
                       <button type="button" onClick={() => setShowBioForm(false)}
-                        className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
+                        className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
                       <button type="submit" disabled={bioSubmitting || !bioForm.title.trim()}
-                        className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-colors">
+                        className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-colors">
                         {bioSubmitting ? '保存中...' : '保存记录'}
                       </button>
                     </div>
@@ -442,8 +442,8 @@ export default function MemberDetailPage() {
                         <div key={record.id} className="relative flex gap-4 pl-1">
                           {/* Timeline dot */}
                           <div className={`relative z-10 mt-1.5 flex h-[8px] w-[8px] shrink-0 rounded-full border-2 border-white ${
-                            record.authorization === 'self' ? 'bg-emerald-500' :
-                            record.authorization === 'deceased_manager' ? 'bg-stone-500' : 'bg-amber-400'
+                            record.authorization === 'self' ? 'bg-#F0E6D50' :
+                            record.authorization === 'deceased_manager' ? 'bg-[#F8F1E7]0' : 'bg-amber-400'
                           }`} />
                           <div className="flex-1 pb-2">
                             <div className="rounded-xl border border-stone-200 bg-white p-3.5 shadow-sm">
@@ -482,17 +482,17 @@ export default function MemberDetailPage() {
 
             {/* Quick links */}
             <div className="grid grid-cols-2 gap-3">
-              <Link href="/family/stories" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 shadow-sm hover:bg-stone-50 transition-colors">
+              <Link href="/family/stories" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 shadow-sm hover:bg-[#F8F1E7] transition-colors">
                 <BookOpen size={15} strokeWidth={1.8} />相关故事
               </Link>
-              <Link href="/family/photos" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 shadow-sm hover:bg-stone-50 transition-colors">
+              <Link href="/family/photos" className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 shadow-sm hover:bg-[#F8F1E7] transition-colors">
                 <Camera size={15} strokeWidth={1.8} />相关照片
               </Link>
             </div>
 
             {/* Invite CTA */}
             {person.claim_status === 'unclaimed' && (
-              <Link href="/family/invite" className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+              <Link href="/family/invite" className="flex items-center justify-center gap-2 w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
                 邀请认领此档案
               </Link>
             )}
@@ -508,7 +508,7 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
     <label className="block">
       <span className="block text-sm font-medium text-stone-700 mb-1.5">{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+        className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
     </label>
   );
 }
@@ -518,7 +518,7 @@ function SelectField({ label, value, onChange, options }: { label: string; value
     <label className="block">
       <span className="block text-sm font-medium text-stone-700 mb-1.5">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+        className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>
@@ -526,5 +526,5 @@ function SelectField({ label, value, onChange, options }: { label: string; value
 }
 
 function CenteredText({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }

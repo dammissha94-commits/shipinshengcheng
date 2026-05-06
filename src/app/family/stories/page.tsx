@@ -85,9 +85,9 @@ export default function StoriesPage() {
   if (error && !family) return <S r={null}><P text={error} /></S>;
 
   return (
-    <S r={<button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:bg-stone-200" aria-label="新增故事"><Plus size={18} strokeWidth={2.5} /></button>}>
+    <S r={<button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 hover:bg-stone-200" aria-label="新增故事"><Plus size={18} strokeWidth={2.5} /></button>}>
       <main className="mx-auto max-w-lg px-4 py-6">
-        <div className="mb-5 rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族故事库</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">{stories.length} 条记录</p>
@@ -105,7 +105,7 @@ export default function StoriesPage() {
               <F label="故事年份" type="number" value={form.storyYear} onChange={(v) => setForm({ ...form, storyYear: v })} />
               <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">正文</span>
                 <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={5}
-                  className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                  className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
               </label>
               <F label="关联人物" value={form.relatedPersonIds} onChange={(v) => setForm({ ...form, relatedPersonIds: v })} placeholder="多个用逗号分隔" />
               <VS value={form.visibility} onChange={(v) => setForm({ ...form, visibility: v })} />
@@ -118,7 +118,7 @@ export default function StoriesPage() {
             icon={<BookOpen size={24} strokeWidth={1.8} />}
             title="还没有家族故事"
             description="从一段回忆、一件小事开始，沉淀家族记忆"
-            action={<button onClick={() => setShowForm(true)} className="rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">添加第一条故事</button>}
+            action={<button onClick={() => setShowForm(true)} className="rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">添加第一条故事</button>}
           />
         ) : (
           <div className="space-y-3">
@@ -136,10 +136,10 @@ export default function StoriesPage() {
 }
 
 function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) {
-  return <div className="min-h-screen bg-stone-50"><AppHeader title="家族故事" backHref="/family" rightElement={r} />{children}</div>;
+  return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="家族故事" backHref="/family" rightElement={r} />{children}</div>;
 }
 function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }
 function P({ text }: { text: string }) {
   return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>;
@@ -147,16 +147,16 @@ function P({ text }: { text: string }) {
 function F({ label, value, onChange, type = 'text', required, placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span>
     <input type={type} required={required} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>;
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
 }
 function VS({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">可见范围</span>
     <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
       {VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
 }
 function FA({ submitting, disabled, onCancel, submitLabel }: { submitting: boolean; disabled: boolean; onCancel: () => void; submitLabel: string }) {
   return <div className="border-t border-stone-100 px-5 py-4 flex gap-3">
-    <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
-    <button disabled={disabled || submitting} className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : submitLabel}</button></div>;
+    <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
+    <button disabled={disabled || submitting} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : submitLabel}</button></div>;
 }

@@ -63,18 +63,18 @@ export default function InvitePage() {
     }
   }
 
-  if (loading) return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
-  if (error && !family) return <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
+  if (loading) return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
+  if (error && !family) return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="邀请认领" backHref="/family" />
 
       <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
         {/* Instructions */}
         <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
           <div className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
               <Share2 size={18} strokeWidth={1.8} />
             </div>
             <div>
@@ -94,11 +94,11 @@ export default function InvitePage() {
             icon={<UserPlus size={24} strokeWidth={1.8} />}
             title="暂无待认领成员"
             description="先在家谱中添加亲属，再邀请他们认领"
-            action={<button onClick={() => router.push('/family/relatives/new')} className="inline-flex items-center gap-2 rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">添加家人</button>}
+            action={<button onClick={() => router.push('/family/relatives/new')} className="inline-flex items-center gap-2 rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">添加家人</button>}
           />
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-stone-500">共 <span className="text-emerald-700 font-semibold">{targets.length}</span> 位家人待认领</p>
+            <p className="text-sm text-stone-500">共 <span className="text-#8D6E63 font-semibold">{targets.length}</span> 位家人待认领</p>
             {targets.map((target) => {
               const isCopied = copied === target.person.id;
               const previewToken = target.invite?.token ?? '';
@@ -120,7 +120,7 @@ export default function InvitePage() {
 
                   {/* Preview */}
                   <div className="px-5 py-4">
-                    <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-500 leading-relaxed whitespace-pre-line max-h-24 overflow-y-auto">
+                    <div className="rounded-xl border border-stone-200 bg-[#F8F1E7] p-3 text-xs text-stone-500 leading-relaxed whitespace-pre-line max-h-24 overflow-y-auto">
                       {inviteText || '加载中...'}
                     </div>
                   </div>
@@ -130,8 +130,8 @@ export default function InvitePage() {
                     <button onClick={() => handleCopy(target)} disabled={!canManage}
                       className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98] ${
                         isCopied
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-emerald-950 text-white hover:bg-emerald-900 shadow-sm'
+                          ? 'bg-#8B5A3C text-white'
+                          : 'bg-#5A3524 text-white hover:bg-#4E342E shadow-sm'
                       } disabled:opacity-50 disabled:pointer-events-none`}>
                       {isCopied ? <><Check size={16} />已复制</> : target.invite ? <><Copy size={15} />复制邀请文案</> : <><Copy size={15} />生成并复制邀请</>}
                     </button>

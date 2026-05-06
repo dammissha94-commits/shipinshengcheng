@@ -61,7 +61,7 @@ export default function ClaimPage() {
   }
 
   if (loading) {
-    return <main className="min-h-screen bg-stone-50 flex items-center justify-center px-4"><p className="text-sm text-stone-500">加载中...</p></main>;
+    return <main className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4"><p className="text-sm text-stone-500">加载中...</p></main>;
   }
 
   const loginHref = loginRedirectPath(`/claim/${token}`);
@@ -71,10 +71,10 @@ export default function ClaimPage() {
   // === CLAIMED SUCCESS STATE ===
   if (claimed) {
     return (
-      <main className="min-h-screen bg-stone-50 flex items-center justify-center px-4 py-10">
+      <main className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 shadow-lg mb-4">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-#8B5A3C shadow-lg mb-4">
               <CheckCircle size={28} strokeWidth={2} className="text-white" />
             </div>
             <h1 className="text-2xl font-bold text-stone-900">认领成功</h1>
@@ -87,7 +87,7 @@ export default function ClaimPage() {
             {/* Profile CTA */}
             <Link href={`/family/members/${invite?.person.id}`}
               className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
                 <CheckCircle size={18} strokeWidth={1.8} />
               </div>
               <div className="flex-1 min-w-0">
@@ -110,7 +110,7 @@ export default function ClaimPage() {
 
             {/* Enter family */}
             <Link href="/family"
-              className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
               <Home size={16} />进入数字家堂
             </Link>
           </div>
@@ -121,11 +121,11 @@ export default function ClaimPage() {
 
   // === NORMAL CLAIM FLOW ===
   return (
-    <main className="min-h-screen bg-stone-50 flex items-center justify-center px-4 py-10">
+    <main className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-950 shadow-lg mb-4">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-#5A3524 shadow-lg mb-4">
             <Home size={26} strokeWidth={1.6} className="text-amber-400" />
           </div>
           <h1 className="text-2xl font-bold text-stone-900">家人邀请</h1>
@@ -136,24 +136,24 @@ export default function ClaimPage() {
         <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
           {invite ? (
             <div className="space-y-3 mb-5">
-              <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3">
+              <div className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3">
                 <p className="text-xs text-stone-400">数字家堂</p>
                 <p className="mt-0.5 text-base font-semibold text-stone-800">{invite.family.displayName}</p>
               </div>
-              <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3">
+              <div className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3">
                 <p className="text-xs text-stone-400">待认领档案</p>
                 <p className="mt-0.5 text-base font-semibold text-stone-800">{invite.person.display_name}</p>
               </div>
 
               {/* Context cards */}
               <div className="grid grid-cols-1 gap-2">
-                <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3">
+                <div className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3">
                   <p className="text-xs text-stone-400">认领后你能做什么</p>
                   <p className="mt-1 text-sm text-stone-700 leading-relaxed">
                     完善个人资料、补充亲属信息、查看家族树中的位置
                   </p>
                 </div>
-                <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-3">
+                <div className="rounded-xl border border-stone-100 bg-[#F8F1E7] px-4 py-3">
                   <p className="text-xs text-stone-400">你的资料谁能看</p>
                   <p className="mt-1 text-sm text-stone-700 leading-relaxed">
                     默认家族内可见，可在设置中调整为仅自己可见
@@ -167,37 +167,37 @@ export default function ClaimPage() {
 
           {message && invite && (
             <p className={`rounded-xl px-4 py-2.5 text-sm mb-4 ${
-              message.includes('成功') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+              message.includes('成功') ? 'bg-#F0E6D5 text-#8D6E63' : 'bg-red-50 text-red-600'
             }`}>{message}</p>
           )}
 
           {!invite ? (
-            <Link href="/" className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+            <Link href="/" className="flex items-center justify-center gap-2 w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
               <Home size={16} />返回首页
             </Link>
           ) : isAlreadyClaimed ? (
             <div className="space-y-3">
-              <p className="text-sm text-emerald-700 bg-emerald-50 rounded-xl px-4 py-2.5 text-center">该档案已被认领</p>
-              <Link href="/family" className="flex items-center justify-center w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+              <p className="text-sm text-#8D6E63 bg-#F0E6D5 rounded-xl px-4 py-2.5 text-center">该档案已被认领</p>
+              <Link href="/family" className="flex items-center justify-center w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
                 进入数字家堂
               </Link>
             </div>
           ) : !isLoggedIn ? (
             <div className="space-y-3">
               <p className="text-sm text-stone-500 text-center">请先登录后认领你的家人档案</p>
-              <Link href={loginHref} className="flex items-center justify-center w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+              <Link href={loginHref} className="flex items-center justify-center w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
                 登录或注册
               </Link>
             </div>
           ) : canClaim ? (
             <div className="space-y-3">
               <button onClick={handleClaim} disabled={claiming}
-                className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-950 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">
+                className="flex items-center justify-center gap-2 w-full rounded-xl bg-#5A3524 py-3 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">
                 <CheckCircle size={16} />
                 {claiming ? '认领中...' : '确认认领'}
               </button>
               <button onClick={handleReject} disabled={rejecting}
-                className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-500 hover:bg-stone-50 disabled:opacity-50 transition-colors">
+                className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] disabled:opacity-50 transition-colors">
                 <XCircle size={16} />
                 {rejecting ? '处理中...' : '拒绝，这不是我'}
               </button>

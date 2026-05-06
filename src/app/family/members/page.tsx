@@ -152,12 +152,12 @@ export default function FamilyMembersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="家人" backHref="/family" />
 
       <div className="px-4 py-6 max-w-3xl mx-auto space-y-5">
         {/* Header stats */}
-        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-xs text-white/40 tracking-widest font-medium">数字家堂</p>
@@ -183,13 +183,13 @@ export default function FamilyMembersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索姓名..."
-              className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+              className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all"
             />
           </div>
           {canManage && (
             <Link
               href="/family/relatives/new"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-950 text-white transition-colors hover:bg-emerald-900 active:scale-95"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-#5A3524 text-white transition-colors hover:bg-#4E342E active:scale-95"
               aria-label="添加亲属"
             >
               <UserPlus size={18} strokeWidth={2} />
@@ -206,7 +206,7 @@ export default function FamilyMembersPage() {
               onClick={() => setFilter(item.value)}
               className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                 filter === item.value
-                  ? 'bg-emerald-950 text-white'
+                  ? 'bg-#5A3524 text-white'
                   : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700'
               }`}
             >
@@ -238,7 +238,7 @@ export default function FamilyMembersPage() {
             icon={<Users size={24} strokeWidth={1.8} />}
             title={search ? '未找到匹配的成员' : '暂无成员'}
             description={search ? '尝试其他关键词' : '先添加亲属，补全家人档案'}
-            action={!search && canManage ? <Link href="/family/relatives/new" className="inline-flex items-center gap-2 rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><UserPlus size={16} /> 添加第一位家人</Link> : undefined}
+            action={!search && canManage ? <Link href="/family/relatives/new" className="inline-flex items-center gap-2 rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors"><UserPlus size={16} /> 添加第一位家人</Link> : undefined}
           />
         ) : (
           <div className="space-y-3">
@@ -255,7 +255,7 @@ export default function FamilyMembersPage() {
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
                       <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-semibold ${
-                        isSelf ? 'bg-emerald-950 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-white' : 'bg-emerald-50 text-emerald-800'
+                        isSelf ? 'bg-#5A3524 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-white' : 'bg-#F0E6D5 text-#6D4C41'
                       }`}>
                         {person.display_name.charAt(0)}
                       </div>
@@ -301,7 +301,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 
 function CenteredText({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-[#F8F1E7] px-4 text-center">
       <p className="text-sm text-stone-500">{text}</p>
     </div>
   );

@@ -106,7 +106,7 @@ function NewRelativeForm() {
               onClick={() => { setRelation(option.value); setError(''); }}
               className={`rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${
                 relation === option.value
-                  ? 'border-emerald-950 bg-emerald-950 text-white shadow-sm'
+                  ? 'border-#5A3524 bg-#5A3524 text-white shadow-sm'
                   : 'border-stone-200 bg-white text-stone-600 hover:border-stone-400'
               }`}
             >
@@ -121,7 +121,7 @@ function NewRelativeForm() {
         <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
           <div className="border-b border-stone-100 px-5 py-4">
             <h2 className="text-base font-semibold text-stone-800">
-              <UserPlus size={16} className="inline mr-2 text-emerald-700" />
+              <UserPlus size={16} className="inline mr-2 text-#8D6E63" />
               填写{selectedLabel}的资料
             </h2>
           </div>
@@ -129,7 +129,7 @@ function NewRelativeForm() {
             <label className="block">
               <span className="block text-sm font-medium text-stone-700 mb-1.5">姓名 <span className="text-red-400">*</span></span>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={`请输入${selectedLabel}的姓名`} maxLength={20}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
             </label>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">性别</label>
@@ -137,7 +137,7 @@ function NewRelativeForm() {
                 {([['male','男'],['female','女'],['unknown','未知']] as const).map(([v, l]) => (
                   <button key={v} type="button" onClick={() => setGender(v)}
                     className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${
-                      gender === v ? 'border-emerald-950 bg-emerald-950 text-white shadow-sm' : 'border-stone-200 bg-white text-stone-600 hover:border-stone-400'
+                      gender === v ? 'border-#5A3524 bg-#5A3524 text-white shadow-sm' : 'border-stone-200 bg-white text-stone-600 hover:border-stone-400'
                     }`}>{l}</button>
                 ))}
               </div>
@@ -145,7 +145,7 @@ function NewRelativeForm() {
             <label className="block">
               <span className="block text-sm font-medium text-stone-700 mb-1.5">出生年份 <span className="text-stone-400 font-normal">（可选）</span></span>
               <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all appearance-none">
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all appearance-none">
                 <option value="">不填写</option>
                 {YEARS.map((y) => <option key={y} value={y}>{y} 年</option>)}
               </select>
@@ -155,7 +155,7 @@ function NewRelativeForm() {
             <p className="text-xs text-stone-400 leading-relaxed">添加亲属后，可前往邀请页面生成链接，发给家人完成认领。</p>
             {error && <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={!canSubmit || submitting}
-              className="w-full h-12 rounded-xl bg-emerald-950 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-900 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]">
+              className="w-full h-12 rounded-xl bg-#5A3524 text-sm font-semibold text-white shadow-sm transition-all hover:bg-#4E342E disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]">
               {submitting ? '保存中...' : '保存并返回家谱'}
             </button>
           </div>
@@ -185,7 +185,7 @@ function CenteredText({ text }: { text: string }) {
 
 export default function NewRelativePage() {
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader title="添加家人" backHref="/family/tree" />
       <Suspense fallback={<CenteredText text="加载中..." />}>
         <NewRelativeForm />

@@ -91,13 +91,13 @@ export default function TreePage() {
   const filledParents = PARENT_RELS.filter((r) => Boolean(get(r))).length;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#F8F1E7]">
       <AppHeader
         title={`${family.surname}家三代谱`}
         backHref="/family"
         rightElement={
           <button onClick={() => add('father')}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-stone-200"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 transition-colors hover:bg-stone-200"
             aria-label="添加成员">
             <Plus size={18} strokeWidth={2.4} />
           </button>
@@ -106,7 +106,7 @@ export default function TreePage() {
 
       <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
         {/* Header card */}
-        <div className="rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族关系</p>
           <h1 className="mt-0.5 text-xl font-bold">{family.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">
@@ -117,15 +117,15 @@ export default function TreePage() {
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Link href="/family/tree/graph"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-950 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors">
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-#5A3524 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
             <Network size={14} />关系图
           </Link>
           <Link href="/family/members"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-[#F8F1E7] transition-colors">
             <Users size={14} />成员列表
           </Link>
           <Link href="/family/settings"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-[#F8F1E7] transition-colors">
             <Settings size={14} />设置
           </Link>
           <Link href="/family/output"
@@ -159,7 +159,7 @@ export default function TreePage() {
         <div className="rounded-2xl border border-stone-200 bg-white p-4">
           <p className="mb-2 text-xs font-semibold text-stone-500">图例</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-stone-500">
-            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-emerald-950 ring-1 ring-amber-400 ring-offset-1 ring-offset-white" />本人</span>
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-#5A3524 ring-1 ring-amber-400 ring-offset-1 ring-offset-white" />本人</span>
             <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-stone-200" />已录入</span>
             <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full border-2 border-dashed border-stone-300" />待添加</span>
             <StatusBadge variant="warning">待认领</StatusBadge>
@@ -176,7 +176,7 @@ function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
   if (!person) {
     return (
       <button onClick={onAdd} className="group flex w-[76px] flex-col items-center gap-1.5" aria-label={`添加${label}`}>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 transition-all group-hover:border-amber-400 group-active:scale-95">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-[#F8F1E7] transition-all group-hover:border-amber-400 group-active:scale-95">
           <Plus size={20} className="text-stone-300 group-hover:text-amber-500" />
         </div>
         <span className="w-full truncate text-center text-[11px] leading-tight text-stone-400">{label}</span>
@@ -189,8 +189,8 @@ function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
     <div className="flex w-[76px] flex-col items-center gap-1.5">
       <div className={cn(
         'flex h-14 w-14 shrink-0 select-none items-center justify-center rounded-2xl text-lg font-semibold',
-        isOwner ? 'bg-emerald-950 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-stone-50'
-          : 'bg-stone-100 text-emerald-800'
+        isOwner ? 'bg-#5A3524 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-stone-50'
+          : 'bg-stone-100 text-#6D4C41'
       )}>
         {person.name.charAt(0)}
       </div>
@@ -221,7 +221,7 @@ function Connector() {
 
 function CenteredText({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-[#F8F1E7] px-4 text-center">
       <p className="text-sm text-stone-500">{text}</p>
     </div>
   );

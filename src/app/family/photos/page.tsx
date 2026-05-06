@@ -146,10 +146,10 @@ export default function PhotosPage() {
   if (error && !family) return <S r={null}><P text={error} /></S>;
 
   return (
-    <S r={<button onClick={() => { setShowForm((v) => !v); setPendingFile(null); setPreviewUrl(null); }} className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 hover:bg-stone-200" aria-label="新增照片"><Plus size={18} strokeWidth={2.5} /></button>}>
+    <S r={<button onClick={() => { setShowForm((v) => !v); setPendingFile(null); setPreviewUrl(null); }} className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 hover:bg-stone-200" aria-label="新增照片"><Plus size={18} strokeWidth={2.5} /></button>}>
       <main className="mx-auto max-w-4xl px-4 py-6">
         {/* Header */}
-        <div className="mb-5 rounded-2xl bg-emerald-950 p-5 text-white">
+        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
           <p className="text-xs text-white/40 tracking-widest font-medium">家族相册</p>
           <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
           <p className="mt-1 text-sm text-white/55">
@@ -160,7 +160,7 @@ export default function PhotosPage() {
         {/* Quick Upload Button (always visible) */}
         <div className="mb-5 grid grid-cols-2 gap-3">
           <button onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 bg-white py-4 text-sm font-semibold text-stone-500 shadow-sm hover:border-emerald-300 hover:text-emerald-700 transition-all">
+            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-300 bg-white py-4 text-sm font-semibold text-stone-500 shadow-sm hover:border-emerald-300 hover:text-#8D6E63 transition-all">
             <Camera size={18} />拍摄 / 上传照片
           </button>
           <button onClick={() => { setPendingFile(null); setPreviewUrl(null); setShowForm((v) => !v); }}
@@ -189,7 +189,7 @@ export default function PhotosPage() {
 
               {/* Upload progress */}
               {uploadProgress && (
-                <p className="text-sm text-emerald-700 bg-emerald-50 rounded-xl px-4 py-2.5">{uploadProgress}</p>
+                <p className="text-sm text-#8D6E63 bg-#F0E6D5 rounded-xl px-4 py-2.5">{uploadProgress}</p>
               )}
 
               <F label="标题" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
@@ -204,7 +204,7 @@ export default function PhotosPage() {
 
               <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">说明</span>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
-                  className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" />
+                  className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
               </label>
             </FormPanel>
           </form>
@@ -214,10 +214,10 @@ export default function PhotosPage() {
         {yearSet.length > 1 && (
           <div className="mb-4 flex gap-2 overflow-x-auto">
             <button onClick={() => setFilterYear('all')}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filterYear === 'all' ? 'bg-emerald-950 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>全部</button>
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filterYear === 'all' ? 'bg-#5A3524 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>全部</button>
             {yearSet.map((y) => (
               <button key={y} onClick={() => setFilterYear(y)}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filterYear === y ? 'bg-emerald-950 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>{y}</button>
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${filterYear === y ? 'bg-#5A3524 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'}`}>{y}</button>
             ))}
           </div>
         )}
@@ -228,7 +228,7 @@ export default function PhotosPage() {
             icon={<Camera size={24} strokeWidth={1.8} />}
             title={filterYear !== 'all' ? `${filterYear} 年暂无照片` : '还没有照片记录'}
             description={filterYear !== 'all' ? '试试其他年份' : '点击上方按钮拍摄或上传第一张照片'}
-            action={filterYear === 'all' ? <button onClick={() => fileInputRef.current?.click()} className="rounded-xl bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 transition-colors"><Camera size={16} className="inline mr-2" />拍摄 / 上传</button> : undefined}
+            action={filterYear === 'all' ? <button onClick={() => fileInputRef.current?.click()} className="rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors"><Camera size={16} className="inline mr-2" />拍摄 / 上传</button> : undefined}
           />
         ) : (
           <div className="masonry-grid">
@@ -305,10 +305,10 @@ export default function PhotosPage() {
 /* ---- Sub Components ---- */
 
 function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) {
-  return <div className="min-h-screen bg-stone-50"><AppHeader title="家族相册" backHref="/family" rightElement={r} />{children}</div>;
+  return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="家族相册" backHref="/family" rightElement={r} />{children}</div>;
 }
 function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-stone-50 flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
 }
 function P({ text }: { text: string }) {
   return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>;
@@ -316,16 +316,16 @@ function P({ text }: { text: string }) {
 function F({ label, value, onChange, type = 'text', required, placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span>
     <input type={type} required={required} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" /></label>;
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
 }
 function VS({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
   return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">可见范围</span>
     <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all">
+      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
       {VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
 }
 function FA({ submitting, disabled, onCancel, submitLabel }: { submitting: boolean; disabled: boolean; onCancel: () => void; submitLabel: string }) {
   return <div className="border-t border-stone-100 px-5 py-4 flex gap-3">
-    <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 transition-colors">取消</button>
-    <button disabled={disabled || submitting} className="flex-1 rounded-xl bg-emerald-950 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-900 disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : submitLabel}</button></div>;
+    <button type="button" onClick={onCancel} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
+    <button disabled={disabled || submitting} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '保存中...' : submitLabel}</button></div>;
 }
