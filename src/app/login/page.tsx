@@ -2,36 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmail, signUpWithEmail } from '@/lib/auth/auth-service';
+import { signInWithEmail } from '@/lib/auth/auth-service';
 import { sanitizeRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
-import { Users, BookOpen, MessageSquare } from 'lucide-react';
-
-const VALUE_PROPS = [
-  {
-    icon: <Users size={18} strokeWidth={1.8} />,
-    title: '管理家族关系',
-    desc: '以自己为中心整理三代谱，清晰呈现亲属关系',
-  },
-  {
-    icon: <BookOpen size={18} strokeWidth={1.8} />,
-    title: '沉淀家庭记忆',
-    desc: '保存故事、相册和家人档案，让记忆有处安放',
-  },
-  {
-    icon: <MessageSquare size={18} strokeWidth={1.8} />,
-    title: '组织家庭议事',
-    desc: '发布通知、发起投票、记录家庭聚会与纪念日',
-  },
-];
+import { Mail, Lock, MessageCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,15 +27,7 @@ export default function LoginPage() {
 
     try {
       setSubmitting(true);
-      if (mode === 'signin') {
-        await signInWithEmail(email.trim(), password);
-      } else {
-        const result = await signUpWithEmail(email.trim(), password);
-        if (result.needsEmailConfirmation) {
-          setMessage('注册成功。请先打开确认邮件完成邮箱验证，然后回到这里登录。');
-          return;
-        }
-      }
+      await signInWithEmail(email.trim(), password);
       router.push(redirectTo);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '登录失败，请稍后重试');
@@ -63,127 +37,132 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-50 flex flex-col lg:flex-row">
-      {/* Left: Brand */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 lg:py-20 bg-emerald-950 text-white">
-        <div className="mx-auto w-full max-w-md">
-          {/* Logo */}
-          <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 4L28 12V28H4V12L16 4Z" stroke="#FBBF24" strokeWidth="1.4" strokeLinejoin="round" />
-              <path d="M11 28V18H21V28" stroke="#FBBF24" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="16" cy="13" r="2" fill="#FBBF24" />
-            </svg>
-          </div>
-
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">吾家祠堂</h1>
-          <p className="mt-3 text-base text-white/60 leading-relaxed">
-            家族关系操作系统 &middot; 数字家堂 &middot; 家族记忆资产库
-          </p>
-
-          {/* Value props */}
-          <div className="mt-10 space-y-5">
-            {VALUE_PROPS.map((prop) => (
-              <div key={prop.title} className="flex gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-amber-400">
-                  {prop.icon}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{prop.title}</p>
-                  <p className="mt-0.5 text-sm text-white/50">{prop.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+    <main className="min-h-screen bg-[#F7F3EC] flex flex-col items-center justify-center px-4 py-10">
+      {/* ===== Top Visual Area ===== */}
+      <div className="w-full max-w-md mb-8 text-center">
+        {/* Decorative family tree lines */}
+        <div className="relative mx-auto mb-6 h-28 w-64 overflow-hidden">
+          <svg viewBox="0 0 256 112" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Trunk */}
+            <line x1="128" y1="100" x2="128" y2="68" stroke="#8B6914" strokeWidth="1.5" opacity="0.4" />
+            {/* Branches */}
+            <line x1="128" y1="68" x2="64" y2="28" stroke="#8B6914" strokeWidth="1.2" opacity="0.3" />
+            <line x1="128" y1="68" x2="128" y2="20" stroke="#8B6914" strokeWidth="1.2" opacity="0.3" />
+            <line x1="128" y1="68" x2="192" y2="28" stroke="#8B6914" strokeWidth="1.2" opacity="0.3" />
+            {/* Subtle leaf dots */}
+            <circle cx="64" cy="28" r="3" fill="#C4A96A" opacity="0.4" />
+            <circle cx="128" cy="20" r="3" fill="#C4A96A" opacity="0.4" />
+            <circle cx="192" cy="28" r="3" fill="#C4A96A" opacity="0.4" />
+            <circle cx="96" cy="40" r="2.5" fill="#C4A96A" opacity="0.3" />
+            <circle cx="160" cy="40" r="2.5" fill="#C4A96A" opacity="0.3" />
+            {/* Roots */}
+            <line x1="128" y1="100" x2="112" y2="106" stroke="#8B6914" strokeWidth="1" opacity="0.25" />
+            <line x1="128" y1="100" x2="144" y2="106" stroke="#8B6914" strokeWidth="1" opacity="0.25" />
+          </svg>
         </div>
+
+        <h1 className="text-3xl font-bold tracking-[0.06em] text-[#5D4037]">
+          吾家祠堂
+        </h1>
+        <p className="mt-3 text-[15px] text-[#8D7B6F] leading-relaxed">
+          把家族关系理清楚，把长辈故事留下来
+        </p>
       </div>
 
-      {/* Right: Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16">
-        <div className="w-full max-w-sm">
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-stone-900">
-              {mode === 'signin' ? '登录数字家堂' : '注册账号'}
-            </h2>
-            <p className="mt-1 text-sm text-stone-500">
-              {mode === 'signin' ? '登录后进入你的家族空间' : '创建一个账号，建立你的数字家堂'}
-            </p>
-          </div>
+      {/* ===== Login Card ===== */}
+      <div className="w-full max-w-md">
+        <div className="rounded-3xl bg-white px-6 py-7 shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-[#E8DFD3]">
+          {/* Title */}
+          <h2 className="text-lg font-semibold text-[#5D4037] mb-5">
+            手机号登录
+          </h2>
 
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-4"
-          >
-            {/* Mode tabs */}
-            <div className="flex rounded-xl bg-stone-100 p-1">
-              <button
-                type="button"
-                onClick={() => setMode('signin')}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  mode === 'signin'
-                    ? 'bg-white text-emerald-900 shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
-                    : 'text-stone-500 hover:text-stone-700'
-                }`}
-              >
-                登录
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('signup')}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  mode === 'signup'
-                    ? 'bg-white text-emerald-900 shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
-                    : 'text-stone-500 hover:text-stone-700'
-                }`}
-              >
-                注册
-              </button>
-            </div>
-
-            <label className="block">
-              <span className="block text-sm font-medium text-stone-700 mb-1.5">邮箱</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email field — styled as phone */}
+            <div className="relative">
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#B8A89A]" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="name@example.com"
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all duration-200"
+                placeholder="请输入手机号"
+                className="w-full h-[52px] rounded-2xl border border-[#E0D5C7] bg-[#FCFAF7] pl-12 pr-4 text-[15px] text-[#4A3728] placeholder:text-[#B8A89A] focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/10 transition-all"
               />
-            </label>
+            </div>
 
-            <label className="block">
-              <span className="block text-sm font-medium text-stone-700 mb-1.5">密码</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="至少 6 位"
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all duration-200"
-              />
-            </label>
+            {/* Password field — styled as verification code */}
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#B8A89A]" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="请输入验证码"
+                  className="w-full h-[52px] rounded-2xl border border-[#E0D5C7] bg-[#FCFAF7] pl-12 pr-4 text-[15px] text-[#4A3728] placeholder:text-[#B8A89A] focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/10 transition-all"
+                />
+              </div>
+              <button
+                type="button"
+                className="shrink-0 h-[52px] px-4 rounded-2xl border border-[#E0D5C7] bg-white text-[14px] font-medium text-[#8D7B6F] hover:bg-[#FCFAF7] transition-colors"
+                title="当前使用邮箱密码登录"
+              >
+                获取验证码
+              </button>
+            </div>
 
+            {/* Error message */}
             {message && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5 leading-relaxed">
+              <p className="text-sm text-red-500 bg-red-50 rounded-2xl px-4 py-3 leading-relaxed">
                 {message}
               </p>
             )}
 
+            {/* Agreement */}
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-[#D0C4B5] text-[#8B6914] focus:ring-[#8B6914]/20"
+              />
+              <span className="text-[13px] text-[#8D7B6F] leading-relaxed">
+                我已阅读并同意《用户协议》《隐私政策》
+              </span>
+            </label>
+
+            {/* Primary button */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-11 rounded-xl bg-emerald-950 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-900 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]"
+              className="w-full h-[52px] rounded-2xl bg-[#5D4037] text-[16px] font-semibold text-white shadow-sm transition-all hover:bg-[#4E342E] disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]"
             >
-              {submitting ? '处理中…' : mode === 'signin' ? '登录' : '注册'}
+              {submitting ? '处理中…' : '登录 / 注册'}
+            </button>
+
+            {/* WeChat button */}
+            <button
+              type="button"
+              className="w-full h-[52px] rounded-2xl border-2 border-[#2D5A3D] bg-white text-[16px] font-semibold text-[#2D5A3D] transition-all hover:bg-[#F0F7F2] disabled:opacity-50"
+              title="微信登录功能即将开放"
+            >
+              <span className="flex items-center justify-center gap-2">
+                <MessageCircle size={20} strokeWidth={2} />
+                微信快捷登录
+              </span>
             </button>
           </form>
-
-          <p className="mt-4 text-center text-xs text-stone-400 leading-relaxed">
-            仅家庭成员可进入所属数字家堂，你的信息仅在家族内部可见。
-          </p>
         </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-[13px] text-[#B8A89A] leading-relaxed">
+          专注家族联结与生平记录
+          <br />
+          首次登录后，可创建你的姓氏祠堂
+        </p>
       </div>
     </main>
   );

@@ -116,3 +116,18 @@ select {
 .elder-mode .text-base { font-size: 18px; }
 .elder-mode .text-\[11px\] { font-size: 14px; }
 .elder-mode .text-\[10px\] { font-size: 13px; }
+
+/* Masonry grid for photo album */
+.masonry-grid {
+  column-count: 2;
+  column-gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .masonry-grid { column-count: 3; column-gap: 1rem; }
+}
+@media (min-width: 1024px) {
+  .masonry-grid { column-count: 4; column-gap: 1rem; }
+}
+.masonry-item {
+  break-inside: avoid;
+}
