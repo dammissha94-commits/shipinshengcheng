@@ -19,7 +19,7 @@ interface QuickActionCardProps {
 }
 
 const BADGE_CLASSES = {
-  default: 'bg-#F0E6D5 text-#8D6E63',
+  default: 'bg-[var(--surface-3)] text-[var(--walnut-light)]',
   amber: 'bg-amber-50 text-amber-700',
 } as const;
 
@@ -40,8 +40,8 @@ export default function QuickActionCard({
     <Link
       href={href}
       className={cn(
-        'group relative flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition-all duration-200',
-        'hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md',
+        'group relative flex flex-col rounded-2xl border border-[var(--line-1)] bg-white p-5 shadow-sm transition-all duration-200',
+        'hover:-translate-y-0.5 hover:border-[var(--line-2)] hover:shadow-md',
         'active:scale-[0.98]',
         className
       )}
@@ -58,17 +58,17 @@ export default function QuickActionCard({
       )}
 
       {icon && (
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[var(--walnut-light)]">
           {icon}
         </div>
       )}
 
-      <h3 className="text-sm font-semibold text-stone-800 group-hover:text-#4E342E">
+      <h3 className="text-sm font-semibold text-[var(--ink-1)] group-hover:text-var(--ink-2)">
         {title}
       </h3>
 
       {description && (
-        <p className="mt-1 text-xs leading-relaxed text-stone-500">
+        <p className="mt-1 text-xs leading-relaxed text-[var(--ink-3)]">
           {description}
         </p>
       )}

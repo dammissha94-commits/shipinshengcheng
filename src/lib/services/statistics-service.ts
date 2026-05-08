@@ -83,7 +83,7 @@ async function loadStatisticsSourceData(
       safeLoadRows<FamilyMeetingVote>('family_meeting_votes', '议事投票'),
       safeLoadRows<FamilyMeetingOpinion>('family_meeting_opinions', '议事意见'),
       safeLoadRows<FamilyCalendarEvent>('family_calendar_events', '家族日历'),
-      safeLoadRows<FamilyOutput>('family_outputs', '成果物预览'),
+      safeLoadRows<FamilyOutput>('family_outputs', '档案预览'),
     ]);
 
   const activeMeetings = meetings.filter((meeting) => meeting.status !== 'archived');
@@ -178,7 +178,7 @@ function buildCompletionScore(data: StatisticsSourceData, currentUserId: string 
     { label: '已有相册记录', passed: data.photos.length > 0, suggestion: '添加老照片' },
     { label: '已有生日提醒', passed: birthdayEvents.length > 0, suggestion: '创建生日提醒' },
     { label: '已有亲属认领', passed: invitedClaimedMembers > 0, suggestion: '邀请亲属认领' },
-    { label: '已有成果物预览', passed: data.outputs.length > 0, suggestion: '生成三代谱预览' },
+    { label: '已有档案预览', passed: data.outputs.length > 0, suggestion: '整理三代谱档案预览' },
   ];
 
   const completedItems = checks.filter((item) => item.passed).map((item) => item.label);

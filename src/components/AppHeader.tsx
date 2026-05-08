@@ -23,23 +23,23 @@ export default function AppHeader({
       className={cn(
         'sticky top-0 z-40 flex h-14 items-center gap-3 px-4 backdrop-blur-xl',
         isPine
-          ? 'bg-pine/95 text-cream shadow-[0_1px_0_rgba(255,255,255,0.06)]'
-          : 'border-b border-sand/60 bg-card/90 text-charcoal shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
+          ? 'bg-walnut/95 text-cream shadow-[0_1px_0_rgba(255,255,255,0.08)]'
+          : 'border-b border-[var(--line-1)]/70 bg-[var(--surface-1)]/82 text-charcoal shadow-[0_10px_26px_rgba(90,53,36,0.05)]'
       )}
     >
       {backHref ? (
         <Link
           href={backHref}
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95',
-            isPine ? 'hover:bg-white/10' : 'hover:bg-sand/70'
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors active:scale-95',
+            isPine ? 'hover:bg-white/10' : 'hover:bg-[var(--surface-2)]'
           )}
           aria-label="返回"
         >
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
       ) : (
-        <div className="w-8" />
+        <div className="w-11" />
       )}
 
       <h1

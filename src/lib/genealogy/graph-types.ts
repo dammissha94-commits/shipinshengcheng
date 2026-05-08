@@ -2,8 +2,8 @@
 
 import type { ClaimStatus, Gender, LivingStatus, RelationType } from '@/types/domain';
 
-export type GenealogyClaimLabel = '已认领' | '待认领' | '有争议';
-export type GenealogyLivingLabel = '在世' | '已故' | '未知';
+export type GenealogyClaimLabel = '已认领' | '待认领' | '有争议' | '已拒绝' | '已隐藏';
+export type GenealogyLivingLabel = '健在' | '离世' | '未填写';
 export type GenealogyRelationLabel = '父母关系' | '子女关系' | '配偶关系' | '兄弟姐妹关系' | '祖辈关系';
 export type GenealogyNodeHighlight = 'normal' | 'selected' | 'connected' | 'dimmed';
 export type GenealogyEdgeHighlight = 'normal' | 'connected' | 'dimmed';

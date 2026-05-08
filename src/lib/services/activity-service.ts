@@ -56,7 +56,7 @@ export function getActivityLabel(
     return { label: '议事', category: 'meeting' };
   }
   if (actionType.includes('output')) {
-    return { label: '成果物', category: 'output' };
+    return { label: '档案', category: 'output' };
   }
   if (actionType.includes('invite')) {
     return { label: '邀请', category: 'invite' };
@@ -116,9 +116,9 @@ export function getActivitySummary(log: ActionLog): string {
   if (action === 'create_person_birthday_event') return '同步了生日提醒';
   if (action === 'update_person_birthday_event') return '更新了生日提醒';
   if (action === 'archive_person_birthday_event') return '归档了生日提醒';
-  if (action === 'create_family_output') return '生成了新的成果物';
-  if (action === 'update_family_output') return '更新了成果物';
-  if (action === 'archive_family_output') return '归档了成果物';
+  if (action === 'create_family_output') return '整理了新的家堂档案';
+  if (action === 'update_family_output') return '更新了家堂档案';
+  if (action === 'archive_family_output') return '归档了家堂档案';
   if (action === 'create_family_space') return '创建了数字家堂';
   if (action === 'update_family_space') return '更新了家堂设置';
   if (action === 'create_invite_token') return '生成了邀请链接';

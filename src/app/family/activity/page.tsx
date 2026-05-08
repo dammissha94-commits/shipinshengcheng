@@ -1,18 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, Activity } from 'lucide-react';
+import { Activity, ArrowLeft, Clock } from 'lucide-react';
 import type { ActionLog, FamilySpace } from '@/types/domain';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
-import { getFamilyActivityLogs, getActivityLabel, getActivityCategoryMeta, getActivitySummary } from '@/lib/services/activity-service';
-import AppHeader from '@/components/AppHeader';
+import { getActivityCategoryMeta, getActivityLabel, getActivitySummary, getFamilyActivityLogs } from '@/lib/services/activity-service';
 import StatusBadge from '@/components/wujia/StatusBadge';
-import EmptyState from '@/components/wujia/EmptyState';
+import WjTimeline from '@/components/wujia/WjTimeline';
+import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
+import { WjHeroPanel, WjInlineStat, WjPaperCard, WjScreenContent, WjSoftNote } from '@/components/wujia/MobileDesignSystem';
 
 type FilterCategory = 'all' | 'member' | 'story' | 'photo' | 'calendar' | 'meeting' | 'output' | 'other';
 
@@ -23,7 +24,7 @@ const FILTERS: { value: FilterCategory; label: string }[] = [
   { value: 'photo', label: '相册' },
   { value: 'calendar', label: '节点' },
   { value: 'meeting', label: '议事' },
-  { value: 'output', label: '成果物' },
+  { value: 'output', label: '档案' },
   { value: 'other', label: '其他' },
 ];
 
@@ -69,212 +70,193 @@ export default function ActivityPage() {
 
   useEffect(() => {
     async function load() {
-      if (!hasSupabaseConfig()) { setError('尚未配置 Supabase 环境变量，请先配置 .env.local'); setLoading(false); return; }
+      if (!hasSupabaseConfig()) {
+        setError('尚未配置 Supabase 环境变量，请先配置 .env.local');
+        setLoading(false);
+        return;
+      }
       try {
         const user = await getCurrentUser();
-        if (!user) { router.replace(currentLoginRedirectPath()); return; }
+        if (!user) {
+          router.replace(currentLoginRedirectPath());
+          return;
+        }
         const currentFamily = await getCurrentFamilySpace(undefined, user);
-        if (!currentFamily) { router.replace('/create'); return; }
+        if (!currentFamily) {
+          router.replace('/create');
+          return;
+        }
         setFamily(currentFamily);
         setLogs(await getFamilyActivityLogs({ familyId: currentFamily.id, limit: 50 }));
-      } catch (e) { setError(e instanceof Error ? e.message : '加载家族动态失败'); }
-      finally { setLoading(false); }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '加载家族动态失败');
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [router]);
 
-  // Filter logs
   const filteredLogs = useMemo(() => {
     if (filter === 'all') return logs;
-    return logs.filter((l) => getActivityLabel(l.action_type).category === filter);
+    return logs.filter((log) => getActivityLabel(log.action_type).category === filter);
   }, [logs, filter]);
 
-  // Group filtered logs by time
   const groupedLogs = useMemo<GroupedLogs[]>(() => {
     const groups: GroupedLogs[] = [];
     let currentGroup: TimeGroup | null = null;
     for (const log of filteredLogs) {
-      const g = getTimeGroup(log.created_at);
-      if (g !== currentGroup) {
-        currentGroup = g;
-        groups.push({ group: g, label: GROUP_LABELS[g], logs: [] });
+      const group = getTimeGroup(log.created_at);
+      if (group !== currentGroup) {
+        currentGroup = group;
+        groups.push({ group, label: GROUP_LABELS[group], logs: [] });
       }
       groups[groups.length - 1].logs.push(log);
     }
     return groups;
   }, [filteredLogs]);
 
-  // Stats
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
-  const todayCount = logs.filter((l) => l.created_at >= todayStart).length;
-  const weekCount = logs.filter((l) => l.created_at >= weekStart).length;
+  const todayCount = logs.filter((log) => log.created_at >= todayStart).length;
+  const weekCount = logs.filter((log) => log.created_at >= weekStart).length;
   const lastUpdate = logs.length > 0 ? formatFullDate(logs[0].created_at) : null;
-
-  if (loading) {
-    return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
-  }
-  if (error && !family) {
-    return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
-  }
-
   const isLowData = filteredLogs.length > 0 && filteredLogs.length <= 3;
 
-  return (
-    <div className="min-h-screen bg-[#F8F1E7]">
-      <AppHeader title="家族动态" backHref="/family" />
+  if (loading) return <Shell><PanelText text="加载家族动态中..." /></Shell>;
+  if (error && !family) return <Shell><PanelText text={error} /></Shell>;
 
-      <div className="px-4 py-5 max-w-2xl mx-auto space-y-4 sm:space-y-5">
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <StatCard label="全部动态" value={logs.length} />
-          <StatCard label="今日" value={todayCount} />
-          <StatCard label="本周" value={weekCount} />
+  return (
+    <Shell>
+      <WjScreenContent>
+        <WjHeroPanel
+          eyebrow="FAMILY ACTIVITY"
+          title="家族动态"
+          description="自动记录家人、故事、相册、日历和议事的最近变化，方便回看家堂更新脉络。"
+        />
+
+        <div className="grid grid-cols-3 gap-2">
+          <WjInlineStat label="全部动态" value={logs.length} />
+          <WjInlineStat label="今日" value={todayCount} />
+          <WjInlineStat label="本周" value={weekCount} />
         </div>
 
         {lastUpdate && (
-          <div className="flex items-center gap-2 text-xs text-stone-400">
-            <Clock size={13} strokeWidth={1.8} />最近更新：{lastUpdate}
+          <div className="flex items-center gap-2 text-xs text-[#78675B]">
+            <Clock size={13} strokeWidth={1.8} />
+            最近更新：{lastUpdate}
           </div>
         )}
 
-        {/* Type filter pills */}
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-0.5">
-          {FILTERS.map((f) => (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {FILTERS.map((item) => (
             <button
-              key={f.value}
+              key={item.value}
               type="button"
-              onClick={() => setFilter(f.value)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filter === f.value
-                  ? 'bg-#5A3524 text-white shadow-sm'
-                  : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700'
+              onClick={() => setFilter(item.value)}
+              className={`flex min-h-[44px] shrink-0 items-center rounded-full px-4 text-xs font-medium transition-all ${
+                filter === item.value
+                  ? 'bg-[#5A3825] text-white shadow-[0_10px_22px_rgba(90,53,36,0.16)]'
+                  : 'border border-[#E7D9C9] bg-white/82 text-[#78675B] hover:border-[#C8A46B] hover:text-[#5A3524]'
               }`}
             >
-              {f.label}
+              {item.label}
             </button>
           ))}
         </div>
 
-        {/* Timeline or Empty */}
         {filteredLogs.length === 0 ? (
-          filter === 'all' ? (
-            <EmptyState
-              icon={<Activity size={24} strokeWidth={1.8} />}
-              title="暂无家族动态"
-              description="当添加家人、记录故事、整理相册或更新家庭节点后，这里会自动汇总最近变化。"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-base font-semibold text-stone-800">该分类暂无动态</p>
-              <p className="mt-1 text-sm text-stone-500">切换其他分类查看，或等待该模块产生新变化</p>
-              <button onClick={() => setFilter('all')} className="mt-4 text-sm font-medium text-#8D6E63">查看全部动态</button>
+          <WjPaperCard className="p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F1E5D6] text-[#9B6A37]">
+              <Activity size={24} />
             </div>
-          )
+            <h2 className="mt-4 text-[18px] font-semibold text-[#2A1D16]">
+              {filter === 'all' ? '暂无家族动态' : '该分类暂无动态'}
+            </h2>
+            <p className="mt-2 text-[13px] leading-6 text-[#78675B]">
+              添加家人、记录故事、整理相册或更新家庭节点后，这里会自动汇总最近变化。
+            </p>
+            {filter !== 'all' && (
+              <button type="button" onClick={() => setFilter('all')} className="mt-4 min-h-[44px] text-sm font-medium text-[#5A3825]">
+                查看全部动态
+              </button>
+            )}
+          </WjPaperCard>
         ) : (
           <>
-            {/* Timeline */}
-            <div className="relative">
-              <div className="absolute left-[17px] sm:left-[19px] top-3 bottom-3 w-px bg-stone-200" />
-
-              <div className="space-y-4 sm:space-y-5">
+            <WjPaperCard className="p-4">
+              <WjTimeline>
                 {groupedLogs.map(({ group, label, logs: groupLogs }) => (
-                  <div key={group}>
-                    {/* Group header */}
-                    <div className="relative flex items-center gap-3 mb-2.5 pl-2">
-                      <div className={`relative z-10 flex h-2.5 w-2.5 shrink-0 rounded-full border-2 border-white ${
-                        group === 'today' ? 'bg-amber-500' : group === 'week' ? 'bg-amber-300' : 'bg-stone-300'
-                      }`} />
-                      <span className="text-xs font-semibold text-stone-400 tracking-wide">{label}</span>
-                    </div>
+                  <React.Fragment key={group}>
+                    {groupLogs.map((log, index) => {
+                      const isFirst = index === 0;
+                      const { label: categoryLabel, category } = getActivityLabel(log.action_type);
+                      const { badgeVariant, linkPrefix } = getActivityCategoryMeta(category);
+                      const summary = getActivitySummary(log);
+                      const hasDetailPage = category === 'member' || category === 'meeting' || category === 'calendar';
+                      const detailHref = linkPrefix && log.target_id && hasDetailPage ? `${linkPrefix}/${log.target_id}` : linkPrefix || null;
+                      const toneMap: Record<string, 'gold' | 'gold-light' | 'terracotta' | 'jade' | 'walnut'> = {
+                        member: 'gold-light',
+                        story: 'gold',
+                        photo: 'jade',
+                        calendar: 'gold-light',
+                        meeting: 'walnut',
+                        output: 'walnut',
+                      };
+                      const groupDotClass = group === 'today' ? 'bg-[#C57945]' : group === 'week' ? 'bg-[#D8B97E]' : 'bg-[#D4BB91]';
 
-                    <div className="space-y-1.5 sm:space-y-2">
-                      {groupLogs.map((log) => {
-                        const { label: catLabel, category } = getActivityLabel(log.action_type);
-                        const { badgeVariant, linkPrefix } = getActivityCategoryMeta(category);
-                        const summary = getActivitySummary(log);
-                        const hasDetailPage = category === 'member' || category === 'meeting' || category === 'calendar';
-                        const detailHref = linkPrefix && log.target_id && hasDetailPage
-                          ? `${linkPrefix}/${log.target_id}` : linkPrefix || null;
-
-                        return (
-                          <div key={log.id} className="relative flex gap-3 sm:gap-4 pl-2">
-                            {/* Timeline dot */}
-                            <div className={`relative z-10 mt-1.5 flex h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] shrink-0 rounded-full border-2 border-white ${
-                              category === 'member' ? 'bg-#F0E6D50' :
-                              category === 'story' ? 'bg-amber-500' :
-                              category === 'photo' ? 'bg-emerald-400' :
-                              category === 'calendar' ? 'bg-amber-400' :
-                              category === 'meeting' ? 'bg-stone-400' :
-                              category === 'output' ? 'bg-#8B5A3C' :
-                              'bg-stone-300'
-                            }`} />
-
-                            <div className="flex-1 pb-3 sm:pb-4">
-                              {detailHref ? (
-                                <Link href={detailHref}
-                                  className="block rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-sm transition-all hover:border-stone-300 hover:shadow-md">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="text-sm font-medium text-stone-800 leading-snug">{summary}</p>
-                                    <StatusBadge variant={badgeVariant}>{catLabel}</StatusBadge>
-                                  </div>
-                                  <p className="mt-1 text-xs text-stone-400">{formatTime(log.created_at)}</p>
-                                </Link>
-                              ) : (
-                                <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-sm">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="text-sm font-medium text-stone-800 leading-snug">{summary}</p>
-                                    <StatusBadge variant={badgeVariant}>{catLabel}</StatusBadge>
-                                  </div>
-                                  <p className="mt-1 text-xs text-stone-400">{formatTime(log.created_at)}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                      return (
+                        <WjTimeline.Item
+                          key={log.id}
+                          groupLabel={isFirst ? label : undefined}
+                          groupDotClass={groupDotClass}
+                          tone={toneMap[category] ?? 'gold-light'}
+                          title={detailHref ? <Link href={detailHref} className="hover:underline">{summary}</Link> : summary}
+                          meta={<StatusBadge variant={badgeVariant}>{categoryLabel}</StatusBadge>}
+                        >
+                          <p className="mt-1 text-xs text-[#78675B]">{formatTime(log.created_at)}</p>
+                        </WjTimeline.Item>
+                      );
+                    })}
+                  </React.Fragment>
                 ))}
-              </div>
-            </div>
+              </WjTimeline>
+            </WjPaperCard>
 
-            {/* Low-data hint card */}
             {isLowData && (
-              <div className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm">
-                <div className="flex gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
-                    <Activity size={17} strokeWidth={1.8} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-800">这里会自动记录家庭更新</p>
-                    <p className="mt-0.5 text-xs text-stone-500 leading-relaxed">
-                      添加家人、记录故事、整理相册、更新家庭节点或处理议事后，这里会汇总最近变化。
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <WjSoftNote>
+                这里会自动记录家堂更新。随着家人认领、故事补充、相册整理和议事推进，动态会逐渐丰富。
+              </WjSoftNote>
             )}
           </>
         )}
 
-        {/* Back link */}
-        <div className="text-center pt-2 pb-4">
-          <Link href="/family" className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-400 hover:text-stone-600 transition-colors">
-            <ArrowLeft size={14} />返回家堂首页
+        <div className="pb-4 text-center">
+          <Link href="/family" className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-[#78675B] hover:text-[#5A3524]">
+            <ArrowLeft size={14} />
+            返回家堂首页
           </Link>
         </div>
-      </div>
-    </div>
+      </WjScreenContent>
+    </Shell>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 shadow-sm text-center">
-      <p className="text-xl sm:text-2xl font-bold text-#4E342E">{value}</p>
-      <p className="mt-0.5 text-[11px] sm:text-xs text-stone-400">{label}</p>
-    </div>
+    <MobilePage>
+      <MobileStatusBar />
+      <MobileTopBar title="家族动态" />
+      {children}
+    </MobilePage>
+  );
+}
+
+function PanelText({ text }: { text: string }) {
+  return (
+    <main className="relative z-10 flex min-h-[70vh] items-center justify-center px-5 text-center">
+      <p className="rounded-[15px] border border-[#E7D9C9] bg-white/82 px-4 py-5 text-sm text-[#78675B] shadow-[0_10px_28px_rgba(90,53,36,0.06)]">{text}</p>
+    </main>
   );
 }

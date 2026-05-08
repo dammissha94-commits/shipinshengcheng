@@ -10,7 +10,12 @@ import { createSupabaseServiceClient, hasSupabaseConfig } from '@/lib/supabase/c
 import type { SupabaseServiceClient } from './service-client';
 import { throwServiceError } from './service-client';
 
+type FamilyPhotoStorageClient = SupabaseServiceClient &
+  Pick<ReturnType<typeof createSupabaseBrowserClient>, 'storage'>;
+
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
+const FAMILY_PHOTOS_BUCKET = 'family-photos';
+const PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 function getClient(client?: SupabaseServiceClient): SupabaseServiceClient | null {
   if (client) return client;
@@ -33,6 +38,64 @@ async function writeActionLog(
 
 function normalizeRelatedPersonIds(value: string[] | undefined): string[] {
   return Array.from(new Set((value ?? []).map((item) => item.trim()).filter(Boolean)));
+}
+
+function extractFamilyPhotoStoragePath(value: string | null): string | null {
+  const rawValue = value?.trim();
+  if (!rawValue) return null;
+
+  if (!/^https?:\/\//i.test(rawValue)) {
+    return rawValue.replace(/^\/+/, '');
+  }
+
+  try {
+    const url = new URL(rawValue);
+    const markers = [
+      `/storage/v1/object/public/${FAMILY_PHOTOS_BUCKET}/`,
+      `/storage/v1/object/sign/${FAMILY_PHOTOS_BUCKET}/`,
+    ];
+    const matchedMarker = markers.find((marker) => url.pathname.includes(marker));
+
+    if (!matchedMarker) return null;
+
+    const [, rawPath = ''] = url.pathname.split(matchedMarker);
+    return decodeURIComponent(rawPath).replace(/^\/+/, '') || null;
+  } catch {
+    return null;
+  }
+}
+
+async function createSignedFamilyPhotoUrl(
+  client: SupabaseServiceClient,
+  value: string | null
+): Promise<string | null> {
+  const storagePath = extractFamilyPhotoStoragePath(value);
+  if (!storagePath) return value;
+
+  const storageClient = client as FamilyPhotoStorageClient;
+  const result = await storageClient.storage
+    .from(FAMILY_PHOTOS_BUCKET)
+    .createSignedUrl(storagePath, PHOTO_SIGNED_URL_TTL_SECONDS);
+
+  if (result.error) return null;
+  return result.data?.signedUrl ?? null;
+}
+
+async function withSignedPhotoUrl(
+  photo: FamilyPhoto,
+  client: SupabaseServiceClient
+): Promise<FamilyPhoto> {
+  return {
+    ...photo,
+    image_url: await createSignedFamilyPhotoUrl(client, photo.image_url),
+  };
+}
+
+async function withSignedPhotoUrls(
+  photos: FamilyPhoto[],
+  client: SupabaseServiceClient
+): Promise<FamilyPhoto[]> {
+  return Promise.all(photos.map((photo) => withSignedPhotoUrl(photo, client)));
 }
 
 async function getPhoto(photoId: string, client: SupabaseServiceClient): Promise<FamilyPhoto> {
@@ -58,7 +121,7 @@ export async function listFamilyPhotos(
     .order('created_at', { ascending: false });
 
   throwServiceError(result.error, 'list family photos failed');
-  return result.data ?? [];
+  return withSignedPhotoUrls(result.data ?? [], resolvedClient);
 }
 
 export async function createFamilyPhoto(
@@ -97,7 +160,7 @@ export async function createFamilyPhoto(
     metadata: {},
   });
 
-  return result.data!;
+  return withSignedPhotoUrl(result.data!, resolvedClient);
 }
 
 export async function updateFamilyPhoto(
@@ -131,7 +194,7 @@ export async function updateFamilyPhoto(
     .single();
 
   throwServiceError(result.error, 'update family photo failed');
-  return result.data!;
+  return withSignedPhotoUrl(result.data!, resolvedClient);
 }
 
 export async function archiveFamilyPhoto(
@@ -169,5 +232,5 @@ export async function archiveFamilyPhoto(
     metadata: {},
   });
 
-  return result.data!;
+  return withSignedPhotoUrl(result.data!, resolvedClient);
 }

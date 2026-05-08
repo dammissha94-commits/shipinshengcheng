@@ -8,14 +8,16 @@ import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { createFamilySpace } from '@/lib/services/family-service';
 import type { Gender } from '@/types/domain';
-import AppHeader from '@/components/AppHeader';
+import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
+import { WjCardHeader, WjHeroPanel, WjPaperCard, WjScreenContent, WjSoftNote } from '@/components/wujia/MobileDesignSystem';
+import { WjButton, WjFormRow, WjInput, WjSelect } from '@/components/wujia/WjForm';
 
 const YEARS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i - 10);
 
 const NEXT_STEPS = [
-  { label: '添加第一位家人', desc: '录入父母、配偶或子女' },
-  { label: '邀请成员认领', desc: '让家人完善自己的个人档案' },
-  { label: '建立三代谱', desc: '自动生成家族关系结构图' },
+  { label: '添加第一位家人', desc: '录入父母、配偶或子女，让家堂从真实关系开始。' },
+  { label: '邀请成员认领', desc: '把节点发给家人，让他们补充自己的档案。' },
+  { label: '生成三代谱', desc: '把零散家人整理成清晰的三代关系结构。' },
 ];
 
 function CreateForm() {
@@ -85,166 +87,114 @@ function CreateForm() {
     }
   }
 
-  if (checkingAuth) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-stone-500">加载中…</p>
-      </div>
-    );
-  }
+  if (checkingAuth) return <CenteredText text="加载中..." />;
 
   return (
-    <div className="px-4 py-6 max-w-lg mx-auto space-y-6">
-      {/* Page header */}
-      <div>
-        <h2 className="text-xl font-bold text-stone-900">创建数字家堂</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          为你的家庭建立一个私密的关系与记忆空间
-        </p>
-      </div>
+    <WjScreenContent>
+      <WjHeroPanel
+        eyebrow="CREATE FAMILY HALL"
+        title="创建数字家堂"
+        description="为你的家庭建立一个私密的关系与记忆空间，先从姓氏和本人档案开始。"
+      />
 
-      {/* Preview card */}
       {trimmedSurname && (
-        <div className="rounded-2xl bg-#5A3524 p-5 text-center text-white shadow-lg">
-          <p className="text-xs text-white/50 tracking-widest">预览</p>
-          <p className="mt-1 text-xl font-bold tracking-wide">{displayName}</p>
-          {name && <p className="mt-1 text-sm text-white/60">创建人：{name}</p>}
-        </div>
+        <WjPaperCard className="overflow-hidden bg-gradient-to-br from-[#5A3825] to-[#8B5A3C] p-5 text-center text-white">
+          <p className="text-[12px] tracking-[0.24em] text-white/55">家堂预览</p>
+          <p className="mt-1 text-[24px] font-bold tracking-wide">{displayName}</p>
+          {name && <p className="mt-1 text-[13px] text-white/68">创建人：{name}</p>}
+        </WjPaperCard>
       )}
 
-      {/* Form card */}
       <form onSubmit={handleSubmit}>
-        <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
-          <div className="border-b border-stone-100 px-5 py-4">
-            <h3 className="text-base font-semibold text-stone-800">基本资料</h3>
-            <p className="mt-0.5 text-sm text-stone-500">填写你的姓氏和姓名即可创建</p>
-          </div>
+        <WjPaperCard className="overflow-hidden">
+          <WjCardHeader title="基本资料" description="填写你的姓氏和姓名即可创建，出生年份为可选项。" />
 
           <div className="space-y-4 px-5 py-5">
-            {/* Surname */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                姓氏 <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={surname}
-                onChange={(e) => setSurname(e.target.value)}
-                placeholder="如：王、李、张"
-                maxLength={4}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200"
-              />
-            </div>
+            <WjFormRow label="姓氏" required>
+              <WjInput value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="如：王、李、张" maxLength={4} />
+            </WjFormRow>
 
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                你的姓名 <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="请输入你的姓名"
-                maxLength={20}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200"
-              />
-            </div>
+            <WjFormRow label="你的姓名" required>
+              <WjInput value={name} onChange={(e) => setName(e.target.value)} placeholder="请输入你的姓名" maxLength={20} />
+            </WjFormRow>
 
-            {/* Gender */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">性别</label>
+            <WjFormRow label="性别">
               <div className="flex gap-3">
                 {([['male', '男'], ['female', '女']] as const).map(([val, lbl]) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setGender(val)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                    className={`min-h-[44px] flex-1 rounded-[14px] border-2 text-sm font-medium transition ${
                       gender === val
-                        ? 'bg-#5A3524 text-white border-#5A3524 shadow-sm'
-                        : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400'
+                        ? 'border-[#5A3825] bg-[#5A3825] text-white shadow-[0_10px_22px_rgba(90,53,36,0.18)]'
+                        : 'border-[#E7D9C9] bg-white text-[#5A3524] hover:border-[#8B5A3C]'
                     }`}
                   >
                     {lbl}
                   </button>
                 ))}
               </div>
-            </div>
+            </WjFormRow>
 
-            {/* Birth year */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                出生年份 <span className="text-stone-400 font-normal">（可选）</span>
-              </label>
-              <select
-                value={birthYear}
-                onChange={(e) => setBirthYear(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all duration-200 appearance-none"
-              >
+            <WjFormRow label="出生年份" hint="可选">
+              <WjSelect value={birthYear} onChange={(e) => setBirthYear(e.target.value)}>
                 <option value="">不填写</option>
                 {YEARS.map((y) => (
                   <option key={y} value={y}>{y} 年</option>
                 ))}
-              </select>
-            </div>
+              </WjSelect>
+            </WjFormRow>
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-stone-100 px-5 py-4 space-y-4">
-            <p className="text-xs text-stone-400 leading-relaxed">
-              你的信息仅在家族内部可见，不对外公开。出生年份为可选项。
-            </p>
+          <div className="space-y-4 border-t border-[#EEE3D6] px-5 py-4">
+            <WjSoftNote>你的信息仅在家族内部可见，不对外公开。后续可以继续补充父母、配偶、子女和兄弟姐妹。</WjSoftNote>
 
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>
-            )}
+            {error && <p className="rounded-xl bg-danger-light px-4 py-2.5 text-sm text-danger">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={!canSubmit || submitting}
-              className="w-full h-12 rounded-xl bg-#5A3524 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-#4E342E disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]"
-            >
-              {submitting ? '创建中…' : '立即创建'}
-            </button>
+            <WjButton type="submit" variant="primary" size="lg" disabled={!canSubmit} loading={submitting} className="w-full">
+              立即创建
+            </WjButton>
           </div>
-        </div>
+        </WjPaperCard>
       </form>
 
-      {/* Next steps */}
-      <div className="rounded-2xl border border-stone-200 bg-white shadow-sm p-5">
-        <p className="text-sm font-semibold text-stone-800 mb-3">创建后你可以</p>
+      <WjPaperCard className="p-5">
+        <p className="mb-3 text-sm font-semibold text-[#2A1D16]">创建后你可以</p>
         <div className="space-y-3">
           {NEXT_STEPS.map((step, i) => (
             <div key={step.label} className="flex gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-#F0E6D5 text-xs font-semibold text-#8D6E63">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F1E5D6] text-xs font-semibold text-[#8B5A3C]">
                 {i + 1}
               </div>
               <div>
-                <p className="text-sm font-medium text-stone-800">{step.label}</p>
-                <p className="text-xs text-stone-500">{step.desc}</p>
+                <p className="text-sm font-medium text-[#2A1D16]">{step.label}</p>
+                <p className="text-xs leading-5 text-[#78675B]">{step.desc}</p>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </WjPaperCard>
+    </WjScreenContent>
+  );
+}
+
+function CenteredText({ text }: { text: string }) {
+  return (
+    <div className="relative z-10 flex min-h-[60vh] items-center justify-center px-5 text-center">
+      <p className="rounded-[15px] border border-[#E7D9C9] bg-white/82 px-4 py-5 text-sm text-[#78675B] shadow-[0_10px_28px_rgba(90,53,36,0.06)]">{text}</p>
     </div>
   );
 }
 
 export default function CreatePage() {
   return (
-    <div className="min-h-screen bg-[#F8F1E7]">
-      <AppHeader title="创建家堂" backHref="/" />
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-20">
-            <p className="text-sm text-stone-500">加载中…</p>
-          </div>
-        }
-      >
+    <MobilePage withBottomNav={false}>
+      <MobileStatusBar />
+      <MobileTopBar title="创建家堂" backHref="/" />
+      <Suspense fallback={<CenteredText text="加载中..." />}>
         <CreateForm />
       </Suspense>
-    </div>
+    </MobilePage>
   );
 }

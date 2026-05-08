@@ -30,7 +30,7 @@ export default function PageHeader({
   return (
     <div className={cn('mb-6 sm:mb-8', className)}>
       {eyebrow && (
-        <p className="mb-1 text-xs font-medium tracking-widest text-stone-400 uppercase">
+        <p className="mb-1 text-xs font-medium tracking-widest text-[var(--ink-3)] uppercase">
           {eyebrow}
         </p>
       )}
@@ -39,12 +39,12 @@ export default function PageHeader({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             {backSlot && <div className="shrink-0">{backSlot}</div>}
-            <h1 className="truncate text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+            <h1 className="truncate text-2xl font-bold tracking-tight text-[var(--ink-1)] sm:text-3xl">
               {title}
             </h1>
           </div>
           {description && (
-            <p className="mt-1.5 text-sm text-stone-500 sm:text-base">
+            <p className="mt-1.5 text-sm text-[var(--ink-3)] sm:text-base">
               {description}
             </p>
           )}

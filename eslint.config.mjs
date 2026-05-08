@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local Codex/Claude worktrees may contain generated .next output from
+    // previous experiments; they are not part of this project's lint target.
+    ".claude/**",
   ]),
 ]);
 

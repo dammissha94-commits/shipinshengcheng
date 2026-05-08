@@ -14,10 +14,10 @@ const buttonVariants = cva(
         danger: 'bg-red-50 text-red-600 hover:bg-red-100',
       },
       size: {
-        sm: 'h-9 px-3',
+        sm: 'h-11 px-3',
         md: 'h-11 px-4',
         lg: 'h-12 px-5 text-base',
-        icon: 'h-9 w-9 p-0',
+        icon: 'h-11 w-11 p-0',
       },
       fullWidth: {
         true: 'w-full',

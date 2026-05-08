@@ -269,14 +269,14 @@ export async function rejectInviteToken(
   // Mark invite as rejected
   await resolvedClient
     .from<InviteToken>('invite_tokens')
-    .update({ status: 'rejected' as unknown as InviteStatus })
+    .update({ status: 'rejected' })
     .eq('id', invite.id)
     .select('*');
 
   // Mark person as rejected
   await resolvedClient
     .from<PersonProfile>('person_profiles')
-    .update({ claim_status: 'rejected' as unknown as PersonProfile['claim_status'], updated_at: nowIso() })
+    .update({ claim_status: 'rejected', updated_at: nowIso() })
     .eq('id', invite.invitee_person_id)
     .eq('claim_status', 'unclaimed')
     .select('*');

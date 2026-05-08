@@ -1,32 +1,55 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  Users, GitBranch, BookOpen, Camera, MailPlus, Bell,
-  ChevronRight, Home, PenLine, Plus, Settings,
+  ChevronRight,
+  FilePenLine,
+  Folder,
+  GitBranch,
+  Mail,
+  Network,
+  ScrollText,
+  UserPlus,
+  Users,
+  CalendarDays,
+  BarChart3,
 } from 'lucide-react';
-import type { FamilySpace, PersonProfile } from '@/types/domain';
+import type { FamilySpace, FamilyStory, PersonProfile } from '@/types/domain';
 import { ensureProfile, getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
-import { getCurrentFamilySpace } from '@/lib/services/family-service';
+import { getCurrentFamilySpace, listUserFamilySpaces } from '@/lib/services/family-service';
 import { listFamilyPersons } from '@/lib/services/person-service';
 import { listFamilyStories } from '@/lib/services/story-service';
-import { getFamilyActivityLogs, getActivitySummary, getActivityLabel } from '@/lib/services/activity-service';
+import { listFamilyCalendarEvents } from '@/lib/services/calendar-service';
+import { getTodayFocus, type TodayFocus } from '@/lib/home/today-focus';
+import { MobilePage } from '@/components/wujia/MobileChrome';
+import {
+  HomeHeader,
+  LastVisitCard,
+  SecondaryAction,
+  TodayHero,
+  ActionCard,
+  HomePanel,
+  MemoryPreview,
+} from '@/components/home';
+import EmptyState from '@/components/wujia/EmptyState';
+import { FadeIn, Stagger } from '@/components/motion';
+import { getFamilyActivityLogs, getActivitySummary } from '@/lib/services/activity-service';
 
-/* ===== Types ===== */
 interface HomeData {
   family: FamilySpace;
+  families: FamilySpace[];
   profiles: PersonProfile[];
   storiesCount: number;
-  photosCount: number;
+  latestStory: FamilyStory | null;
+  focus: TodayFocus;
+  userEmail: string;
   recentNotice: { text: string; time: string } | null;
-  recentUpdates: { id: string; text: string; time: string; icon: 'story' | 'photo' | 'member' }[];
 }
 
-/* ===== Helpers ===== */
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const h = Math.floor(diff / 3600000);
@@ -34,23 +57,6 @@ function relativeTime(iso: string): string {
   if (h < 24) return `${h}小时前`;
   return `${Math.floor(h / 24)}天前`;
 }
-
-const FEATURES = [
-  { icon: <GitBranch size={22} strokeWidth={1.6} />, label: '家族树', href: '/family/tree/graph' },
-  { icon: <BookOpen size={22} strokeWidth={1.6} />, label: '生平传记', href: '/family/members' },
-  { icon: <Camera size={22} strokeWidth={1.6} />, label: '祠堂相册', href: '/family/photos' },
-  { icon: <ClockIcon />, label: '生平纪念', href: '/family/members' },
-  { icon: <Users size={22} strokeWidth={1.6} />, label: '家族成员', href: '/family/members' },
-  { icon: <MenuIcon />, label: '全部功能', href: '/family/statistics' },
-];
-
-const BOTTOM_TABS = [
-  { icon: <Home size={20} />, label: '首页', href: '/family', active: true },
-  { icon: <GitBranch size={20} />, label: '家族树', href: '/family/tree' },
-  { icon: <Plus size={24} strokeWidth={2.5} />, label: '记录', href: '/family/stories', primary: true },
-  { icon: <PenLine size={20} />, label: '传记', href: '/family/members' },
-  { icon: <Settings size={20} />, label: '我的', href: '/family/settings' },
-];
 
 export default function FamilyPage() {
   const router = useRouter();
@@ -60,319 +66,283 @@ export default function FamilyPage() {
 
   useEffect(() => {
     async function load() {
-      if (!hasSupabaseConfig()) { setError('no-config'); setLoading(false); return; }
+      if (!hasSupabaseConfig()) {
+        setError('no-config');
+        setLoading(false);
+        return;
+      }
       try {
         const user = await getCurrentUser();
-        if (!user) { router.replace(currentLoginRedirectPath()); return; }
+        if (!user) {
+          router.replace(currentLoginRedirectPath());
+          return;
+        }
         await ensureProfile(user);
         const family = await getCurrentFamilySpace(undefined, user);
-        if (!family) { router.replace('/create'); return; }
+        if (!family) {
+          router.replace('/create');
+          return;
+        }
 
-        const [profiles, stories, logs] = await Promise.all([
+        const [profiles, stories, events, families, activityLogs] = await Promise.all([
           listFamilyPersons(family.id),
           listFamilyStories(family.id),
-          getFamilyActivityLogs({ familyId: family.id, limit: 10 }),
+          listFamilyCalendarEvents(family.id).catch(() => []),
+          listUserFamilySpaces(undefined, user),
+          getFamilyActivityLogs({ familyId: family.id, limit: 10 }).catch(() => []),
         ]);
 
-        // Recent notice: latest activity log with real summary
-        const lastLog = logs[0];
-        const recentNotice = lastLog
-          ? { text: getActivitySummary(lastLog), time: relativeTime(lastLog.created_at) }
-          : null;
+        const activeStories = stories.filter((s) => s.status === 'active');
+        const latestStory = activeStories[0] ?? null;
+        const latestActivity = activityLogs[0] ?? null;
 
-        // Recent updates: merge activity logs + stories, sorted by time
-        const storyUpdates = stories.filter(s => s.status === 'active').slice(0, 3).map(s => ({
-          id: s.id, text: s.title || '记录了故事',
-          time: relativeTime(s.created_at), icon: 'story' as const,
-        }));
-        const logUpdates = logs.slice(0, 5).filter(l => l.action_type !== 'create_family_space' && l.action_type !== 'update_family_space').map(l => ({
-          id: l.id, text: getActivitySummary(l),
-          time: relativeTime(l.created_at),
-          icon: (getActivityLabel(l.action_type).category === 'story' ? 'story' : getActivityLabel(l.action_type).category === 'photo' ? 'photo' : 'member') as 'story' | 'photo' | 'member',
-        }));
-        const recentUpdates = [...logUpdates, ...storyUpdates].slice(0, 5);
+        const focus = getTodayFocus({
+          currentUserId: user.id,
+          family,
+          profiles,
+          events,
+          storiesCount: activeStories.length,
+        });
 
         setData({
           family,
+          families,
           profiles,
-          storiesCount: stories.filter(s => s.status === 'active').length,
-          photosCount: 0,
-          recentNotice,
-          recentUpdates,
+          storiesCount: activeStories.length,
+          latestStory,
+          focus,
+          userEmail: user.email ?? '',
+          recentNotice: latestActivity
+            ? { text: getActivitySummary(latestActivity), time: relativeTime(latestActivity.created_at) }
+            : null,
         });
-      } catch (e) { setError(e instanceof Error ? e.message : '加载失败'); }
-      finally { setLoading(false); }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '加载失败');
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [router]);
 
-  if (loading) return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-[#8A7465] text-sm">加载中…</p></div>;
+  if (loading) return <HomeSkeleton />;
   if (error === 'no-config') return <EmptyShell text="尚未配置 Supabase 环境变量" />;
   if (error || !data) return <EmptyShell text={error || '请先创建数字家堂'} />;
 
-  const { family, profiles, storiesCount, recentNotice, recentUpdates } = data;
-  const claimedCount = profiles.filter(p => p.claim_status === 'claimed').length;
-  const unclaimedCount = profiles.filter(p => p.claim_status === 'unclaimed').length;
-  const userName = profiles.find(p => p.claim_status === 'claimed')?.display_name || family.displayName;
+  const { family, families, profiles, latestStory, focus, userEmail, recentNotice } = data;
+  const claimedCount = profiles.filter((p) => p.claim_status === 'claimed').length;
+  const pendingCount = profiles.filter((p) => p.claim_status === 'unclaimed').length;
+  const hasMembers = profiles.length > 0;
+  const familyPreview = profiles.slice(0, 5);
+
+  // 主 CTA：只保留一个显著入口，减少认知负担
+  const primaryCTA = !hasMembers
+    ? {
+        href: '/family/relatives/new',
+        icon: <UserPlus size={28} />,
+        title: '添加第一位家人',
+        description: '从录入父母、配偶或子女开始，搭起家族树',
+      }
+    : pendingCount > 0
+    ? {
+        href: '/family/invite',
+        icon: <Mail size={28} />,
+        title: '邀请家人认领',
+        description: `还有 ${pendingCount} 位家人待认领，邀请他们补全自己的资料`,
+      }
+    : {
+        href: '/family/stories',
+        icon: <FilePenLine size={28} />,
+        title: '补充一段人生记忆',
+        description: '从一件小事开始，把家人的故事留下来',
+      };
 
   return (
-    <div className="min-h-screen bg-[#F8F1E7] pb-24">
-      {/* ===== 1. Top Bar ===== */}
-      <header className="px-4 pt-12 pb-3">
-        <div className="max-w-[430px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#E8D9C8] flex items-center justify-center text-[#5A3524] font-bold text-lg">
-              {userName?.charAt(0) || family.surname?.charAt(0) || '家'}
-            </div>
-            <div>
-              <p className="text-base font-semibold text-[#3A2418]">{userName || '成员'}</p>
-              <p className="text-xs text-[#8A7465]">欢迎回到 {family.surname}氏祠堂</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/family/invite" className="flex flex-col items-center gap-0.5">
-              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8D9C8] flex items-center justify-center text-[#5A3524]">
-                <MailPlus size={16} />
-              </div>
-              <span className="text-[10px] text-[#8A7465]">邀请</span>
-            </Link>
-            <Link href="/family/members" className="flex flex-col items-center gap-0.5 relative">
-              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8D9C8] flex items-center justify-center text-[#8B5A3C]">
-                <Users size={16} />
-              </div>
-              <span className="text-[10px] text-[#8A7465]">
-                待认领{unclaimedCount > 0 && <span className="text-[#8B5A3C] font-bold"> {unclaimedCount}</span>}
-              </span>
-            </Link>
-          </div>
-        </div>
-      </header>
+    <MobilePage>
+      <main id="main" className="relative px-[18px] pb-safe-nav pt-4">
+        <HomeHeader current={family} families={families.length > 0 ? families : [family]} />
 
-      <div className="max-w-[430px] mx-auto px-4 space-y-4">
-        {/* ===== 2. Hero Card ===== */}
-        <Link href="/family/tree" className="block">
-          <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#6B3A29] via-[#5A3524] to-[#4A2A1A] p-6 text-white shadow-xl">
-            {/* Decorative image layer — warm, atmospheric */}
-            <img
-              src="/images/home-page-design.png"
-              alt=""
-              className="absolute right-0 top-1/2 -translate-y-1/2 h-[140%] w-auto max-w-[60%] object-cover opacity-20 mix-blend-soft-light"
-            />
-            {/* Gradient overlay — ensures text readability */}
-            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#5A3524]/40 to-[#5A3524]/80" />
-            {/* Warm circle ornament */}
-            <div className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full bg-[#C9A35A]/10" />
-            <div className="absolute right-8 bottom-4 w-16 h-16 rounded-full bg-amber-400/5" />
+        {/* 顶部欢迎卡 — 核心入口 */}
+        <FadeIn delay={0.05} className="mt-4">
+          <TodayHero
+            focus={focus}
+            totalMembers={profiles.length}
+            claimedMembers={claimedCount}
+            userFallbackName={userEmail.split('@')[0] || undefined}
+          />
+        </FadeIn>
 
-            <div className="relative z-10">
-              <p className="text-xs text-amber-200/60 tracking-[0.15em]">追本溯源 · 慎终追远 · 敦亲睦族</p>
-              <h1 className="mt-2 text-xl font-bold tracking-wide">{family.surname}氏祠堂</h1>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="flex -space-x-1.5">
-                  {profiles.slice(0, 3).map((p, i) => (
-                    <div key={p.id} className="w-7 h-7 rounded-full bg-white/20 border-2 border-[#5A3524] flex items-center justify-center text-[10px] font-bold"
-                      style={{ zIndex: 3 - i }}>{p.display_name?.charAt(0)}</div>
+        {/* 今日最该做的一件事 */}
+        <FadeIn delay={0.1} className="mt-4">
+          <Link
+            href={primaryCTA.href}
+            className="group relative flex items-center gap-4 overflow-hidden rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--walnut)] to-[var(--walnut-light)] p-4 text-white shadow-warm-md transition active:scale-[0.99]"
+          >
+            <span aria-hidden className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/12" />
+            <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/16 text-white">
+              {primaryCTA.icon}
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[16px] font-bold tracking-[0.02em]">{primaryCTA.title}</p>
+              <p className="mt-0.5 text-[12px] leading-5 text-white/80">{primaryCTA.description}</p>
+            </div>
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+              <ChevronRight size={18} />
+            </span>
+          </Link>
+        </FadeIn>
+
+        {/* 三个次级入口 */}
+        <Stagger className="relative z-10 mt-3" stagger={0.05} delay={0.18}>
+          <div className="grid grid-cols-3 gap-2">
+            <Stagger.Item>
+              <SecondaryAction href="/family/tree/graph" icon={<Network size={20} />} label="家族树" tone="walnut" />
+            </Stagger.Item>
+            <Stagger.Item>
+              <SecondaryAction href="/family/stories" icon={<ScrollText size={20} />} label="人生记忆" tone="gold" />
+            </Stagger.Item>
+            <Stagger.Item>
+              <SecondaryAction href="/family/invite" icon={<Mail size={20} />} label="邀请认领" tone="jade" />
+            </Stagger.Item>
+          </div>
+        </Stagger>
+
+        {/* 家族树概览 */}
+        <FadeIn delay={0.26} className="mt-4">
+          <HomePanel
+            icon={<GitBranch size={18} />}
+            title="家族树概览"
+            href="/family/tree"
+          >
+            {!hasMembers ? (
+              <EmptyState
+                title="还没有家人档案"
+                description="先添加父母、配偶或子女，开始建立家族树。"
+                action={<Link href="/family/relatives/new" className="wj-primary flex min-h-[44px] items-center justify-center rounded-2xl px-5 text-sm font-semibold">添加亲属</Link>}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 rounded-[var(--radius-md)] border border-[var(--line-1)] bg-[var(--surface-2)] p-3 text-[12px] text-[var(--ink-3)]">
+                  <div>
+                    已录入 <span className="font-semibold text-[var(--ink-1)]">{profiles.length}</span> 位家人
+                  </div>
+                  <div>
+                    已认领 <span className="font-semibold text-[var(--ink-1)]">{claimedCount}</span> 位
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  {familyPreview.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/family/members/${p.id}`}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-semibold shadow-sm ${
+                        p.claim_status === 'claimed'
+                          ? 'bg-[var(--walnut)] text-white'
+                          : 'bg-[var(--surface-3)] text-[var(--ink-2)]'
+                      }`}>
+                        {p.display_name?.charAt(0) ?? '家'}
+                      </span>
+                      <span className="max-w-[58px] truncate text-[11px] text-[var(--ink-3)]">{p.display_name}</span>
+                    </Link>
                   ))}
-                  {profiles.length > 3 && (
-                    <div className="w-7 h-7 rounded-full bg-white/20 border-2 border-[#5A3524] flex items-center justify-center text-[10px]">+{profiles.length - 3}</div>
-                  )}
                 </div>
-                <span className="text-sm text-white/70">共{profiles.length}位族人</span>
+                <div className="flex gap-2">
+                  <Link href="/family/tree" className="wj-primary flex min-h-[44px] flex-1 items-center justify-center rounded-2xl text-sm font-semibold">进入三代谱</Link>
+                  <Link href="/family/relatives/new" className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-[var(--line-1)] bg-[var(--surface-1)] text-sm font-medium text-[var(--ink-2)]">添加成员</Link>
+                </div>
+              </div>
+            )}
+          </HomePanel>
+        </FadeIn>
+
+        {/* 最近动态 / 最近记忆 */}
+        <FadeIn delay={0.32} className="mt-4 space-y-4">
+          {recentNotice && (
+            <div className="rounded-[var(--radius-md)] border border-[var(--line-1)] bg-[var(--surface-1)] px-4 py-3 shadow-warm-xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold tracking-[0.12em] text-[var(--gold)]">最近动态</p>
+                  <p className="mt-1 line-clamp-2 text-[14px] text-[var(--ink-2)]">{recentNotice.text}</p>
+                </div>
+                <span className="text-[12px] text-[var(--ink-3)] shrink-0">{recentNotice.time}</span>
               </div>
             </div>
-          </div>
-        </Link>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <StatBadge label="已认领" value={claimedCount} />
-          <StatBadge label="待认领" value={unclaimedCount} tone="amber" />
-          <StatBadge label="故事" value={storiesCount} />
-        </div>
-
-        {/* ===== 3. Feature Grid ===== */}
-        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-          <div className="grid grid-cols-3 gap-4">
-            {FEATURES.map((f) => (
-              <Link key={f.label} href={f.href} className="flex flex-col items-center gap-2 py-1">
-                <div className="w-12 h-12 rounded-2xl bg-[#F8F1E7] flex items-center justify-center text-[#5A3524]">{f.icon}</div>
-                <span className="text-xs font-medium text-[#3A2418]">{f.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ===== 4. Notice Bar ===== */}
-        {recentNotice && (
-          <Link href="/family/activity" className="block">
-            <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.03)] hover:shadow-md transition-shadow">
-              <Bell size={16} className="text-[#C9A35A] shrink-0" />
-              <p className="flex-1 text-sm text-[#3A2418] truncate">{recentNotice.text}</p>
-              <span className="text-xs text-[#8A7465] shrink-0">{recentNotice.time}</span>
-              <ChevronRight size={14} className="text-[#C4B5A5] shrink-0" />
-            </div>
-          </Link>
-        )}
-
-        {/* ===== 5. Tree Preview ===== */}
-        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-[#3A2418]">家族树概览</h2>
-            <Link href="/family/tree" className="text-xs text-[#8B5A3C] flex items-center gap-1">
-              查看完整家族树 <ChevronRight size={14} />
-            </Link>
-          </div>
-          {profiles.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-[#8A7465]">还没有家人档案</p>
-              <Link href="/family/relatives/new" className="mt-2 inline-block text-sm font-medium text-[#8B5A3C]">添加第一位家人</Link>
-            </div>
-          ) : (
-            <TreePreview profiles={profiles} />
           )}
-        </div>
 
-        {/* ===== 6. Invite Card ===== */}
-        <Link href="/family/invite" className="block">
-          <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#FFFDF8] via-[#FBF6ED] to-[#F5ECD8] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#E8D9C8]">
-            {/* Decorative abstract leaves/circles */}
-            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-[#C9A35A]/8" />
-            <div className="absolute right-8 bottom-2 w-16 h-16 rounded-full bg-[#8B5A3C]/5" />
-            <div className="absolute right-16 top-4 w-8 h-8 rounded-full bg-[#C9A35A]/10" />
-
-            <div className="relative z-10">
-              <h2 className="text-base font-semibold text-[#3A2418]">邀请亲人入驻祠堂</h2>
-              <p className="mt-1 text-sm text-[#8A7465]">一起完善家族资料，延续家族记忆</p>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#5A3524] to-[#6B4030] text-white px-5 py-2.5 text-sm font-semibold shadow-md shadow-[#5A3524]/20 hover:shadow-lg hover:shadow-[#5A3524]/30 transition-all">
-                立即邀请 <ChevronRight size={16} />
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* ===== 7. Recent Updates ===== */}
-        <div className="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-[#3A2418]">家族近况</h2>
-            <Link href="/family/activity" className="text-xs text-[#8B5A3C] flex items-center gap-1">
-              查看全部 <ChevronRight size={14} />
-            </Link>
-          </div>
-          {recentUpdates.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-[#8A7465]">暂无家族近况</p>
-              <p className="text-xs text-[#C4B5A5] mt-1">记录一段故事，让家人看到更新</p>
-              <Link href="/family/stories" className="mt-3 inline-block text-sm font-medium text-[#8B5A3C]">记录第一段故事</Link>
-            </div>
+          {latestStory ? (
+            <LastVisitCard latestStory={latestStory} />
           ) : (
-            <div className="space-y-3">
-              {recentUpdates.map((u) => (
-                <div key={u.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#F0E6D5] flex items-center justify-center text-[#8B5A3C] font-bold text-sm">
-                    {u.icon === 'story' ? <BookOpen size={16} /> : u.icon === 'photo' ? <Camera size={16} /> : <Users size={16} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#3A2418] truncate">{u.text}</p>
-                    <p className="text-xs text-[#B8A898] mt-0.5">{u.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MemoryPreview
+              title="还没有家族记忆"
+              meta="记录第一段故事，让家族近况开始积累。"
+              tag="故事"
+            />
           )}
-        </div>
+        </FadeIn>
 
-        <div className="h-4" />
+        {/* 底部工具区 */}
+        <Stagger className="relative z-10 mt-4" stagger={0.05} delay={0.38}>
+          <div className="grid grid-cols-2 gap-2">
+            <Stagger.Item>
+              <ActionCard href="/family/photos" icon={<Folder size={20} />} label="家族相册" tone="jade" compact />
+            </Stagger.Item>
+            <Stagger.Item>
+              <ActionCard href="/family/statistics" icon={<BarChart3 size={20} />} label="家堂数据" tone="gold" compact />
+            </Stagger.Item>
+            <Stagger.Item>
+              <ActionCard href="/family/activity" icon={<CalendarDays size={20} />} label="家族动态" tone="walnut" compact />
+            </Stagger.Item>
+            <Stagger.Item>
+              <ActionCard href="/family/settings" icon={<Users size={20} />} label="家堂设置" tone="jade" compact />
+            </Stagger.Item>
+          </div>
+        </Stagger>
+      </main>
+    </MobilePage>
+  );
+}
+
+/**
+ * HomeSkeleton — 首页骨架屏（与首页新结构对齐）
+ */
+function HomeSkeleton() {
+  return (
+    <MobilePage>
+      <div className="relative space-y-4 px-[18px] pb-8 pt-6">
+        <div className="flex items-center justify-between">
+          <div className="wj-skeleton h-9 w-40" />
+          <div className="wj-skeleton h-12 w-36 rounded-full" />
+        </div>
+        <div className="wj-skeleton h-[210px] rounded-[var(--radius-xl)]" />
+        <div className="wj-skeleton h-[88px] rounded-[var(--radius-md)]" />
+        <div className="grid grid-cols-3 gap-2">
+          <div className="wj-skeleton h-[80px] rounded-[var(--radius-md)]" />
+          <div className="wj-skeleton h-[80px] rounded-[var(--radius-md)]" />
+          <div className="wj-skeleton h-[80px] rounded-[var(--radius-md)]" />
+        </div>
+        <div className="wj-skeleton h-[210px] rounded-[var(--radius-md)]" />
+        <div className="wj-skeleton h-[88px] rounded-[var(--radius-md)]" />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="wj-skeleton h-[88px] rounded-[var(--radius-md)]" />
+          <div className="wj-skeleton h-[88px] rounded-[var(--radius-md)]" />
+        </div>
       </div>
-
-      {/* ===== 8. Bottom Nav ===== */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E8D9C8] z-50">
-        <div className="max-w-[430px] mx-auto flex items-center justify-around py-2 px-2">
-          {BOTTOM_TABS.map((tab) => (
-            <Link key={tab.label} href={tab.href}
-              className={`flex flex-col items-center gap-0.5 py-1 ${tab.primary ? '-mt-5' : ''}`}>
-              {tab.primary ? (
-                <div className="w-12 h-12 rounded-full bg-[#5A3524] text-white flex items-center justify-center shadow-lg shadow-[#5A3524]/30">
-                  {tab.icon}
-                </div>
-              ) : (
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tab.active ? 'text-[#5A3524]' : 'text-[#B8A898]'}`}>
-                  {tab.icon}
-                </div>
-              )}
-              <span className={`text-[10px] ${tab.active ? 'text-[#5A3524] font-semibold' : 'text-[#B8A898]'}`}>
-                {tab.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-        <div className="h-[env(safe-area-inset-bottom,0px)]" />
-      </nav>
-    </div>
-  );
-}
-
-/* ===== Sub-components ===== */
-
-function StatBadge({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'amber' }) {
-  return (
-    <div className={`rounded-2xl px-4 py-3 text-center ${tone === 'amber' ? 'bg-[#FFF8E7] border border-[#E8D9C8]' : 'bg-white border border-[#E8D9C8]'}`}>
-      <p className="text-xl font-bold text-[#3A2418]">{value}</p>
-      <p className="text-xs text-[#8A7465] mt-0.5">{label}</p>
-    </div>
-  );
-}
-
-function TreePreview({ profiles }: { profiles: PersonProfile[] }) {
-  const top = profiles.slice(0, 7);
-  if (top.length === 0) return null;
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-3 py-2">
-      {top.map((p, i) => (
-        <div key={p.id} className="flex flex-col items-center gap-1.5">
-          <Link href={`/family/members/${p.id}`}
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
-              i === 0 ? 'bg-[#5A3524] text-white ring-2 ring-[#C9A35A] ring-offset-2 ring-offset-white' :
-              p.claim_status === 'claimed' ? 'bg-[#8B5A3C] text-white' : 'bg-[#E8D9C8] text-[#8A7465]'
-            }`}>
-            {p.display_name?.charAt(0)}
-          </Link>
-          <span className="text-[10px] text-[#3A2418] max-w-[48px] truncate text-center">{p.display_name}</span>
-        </div>
-      ))}
-      <Link href="/family/relatives/new"
-        className="flex flex-col items-center gap-1.5">
-        <div className="w-10 h-10 rounded-full border-2 border-dashed border-[#C4B5A5] flex items-center justify-center text-[#B8A898] hover:border-[#8B5A3C] hover:text-[#8B5A3C] transition-colors">
-          <Plus size={16} />
-        </div>
-        <span className="text-[10px] text-[#8A7465]">添加</span>
-      </Link>
-    </div>
+    </MobilePage>
   );
 }
 
 function EmptyShell({ text }: { text: string }) {
   return (
-    <div className="min-h-screen bg-[#F8F1E7] flex flex-col items-center justify-center px-4 text-center">
-      <p className="text-sm text-[#8A7465] mb-3">{text}</p>
-      <Link href="/create" className="rounded-2xl bg-[#5A3524] text-white px-5 py-2.5 text-sm font-semibold shadow-sm">
-        创建我的姓氏祠堂
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--surface-2)] px-4 text-center">
+      <p className="mb-3 text-sm text-[var(--ink-3)]">{text}</p>
+      <Link
+        href="/create"
+        className="min-h-[44px] rounded-2xl bg-[var(--walnut)] px-5 py-3 text-sm font-semibold text-white shadow-sm transition active:scale-[0.97]"
+      >
+        创建我的姓氏家堂
       </Link>
     </div>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" />
-    </svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="6" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="18" r="1.5" />
-    </svg>
   );
 }

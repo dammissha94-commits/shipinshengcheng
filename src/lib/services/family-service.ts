@@ -220,6 +220,21 @@ export async function createFamilySpace(
   return family;
 }
 
+/**
+ * 多家堂场景下，用户在浏览器选择「当前活跃家堂」的本地存储 key。
+ * 仅作客户端偏好，服务端始终返回最新一条 active membership 作为回退。
+ */
+export const ACTIVE_FAMILY_STORAGE_KEY = 'wj-active-family-id';
+
+function getActiveFamilyHint(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(ACTIVE_FAMILY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentFamilySpace(
   client?: SupabaseServiceClient,
   user?: User | null
@@ -241,10 +256,15 @@ export async function getCurrentFamilySpace(
     .order('created_at', { ascending: false });
 
   throwServiceError(membershipsResult.error, 'get current family membership failed');
-  const currentMembership = membershipsResult.data?.[0];
-  if (!currentMembership) return null;
+  const memberships = membershipsResult.data ?? [];
+  if (memberships.length === 0) return null;
 
-  return fetchFamilySpaceById(resolvedClient, currentMembership.family_id);
+  // 多家堂时优先用客户端偏好（localStorage），回退到最新一条
+  const hintedId = getActiveFamilyHint();
+  const target =
+    (hintedId && memberships.find((m) => m.family_id === hintedId)) || memberships[0];
+
+  return fetchFamilySpaceById(resolvedClient, target.family_id);
 }
 
 export async function listUserFamilySpaces(

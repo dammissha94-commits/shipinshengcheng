@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FileText, Network, Plus, Settings, Users } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
@@ -13,9 +12,11 @@ import { mapProfilesToTreePersons } from '@/lib/family-view';
 import type { FamilySpace, Person, Relation } from '@/types/domain';
 import { getRelationLabel } from '@/types/domain';
 import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
-import AppHeader from '@/components/AppHeader';
 import StatusBadge from '@/components/wujia/StatusBadge';
 import { cn } from '@/lib/utils';
+import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import TreeViewSwitcher from '@/components/tree/TreeViewSwitcher';
 
 interface NodeProps {
   person: Person | null;
@@ -77,7 +78,7 @@ export default function TreePage() {
     loadTree();
   }, [router]);
 
-  if (loading) return <CenteredText text="加载中..." />;
+  if (loading) return <PageSkeleton title="三代谱" backHref="/family" cards={3} withStats={true} withSearch={false} />;
   if (error || !family) return <CenteredText text={error || '请先创建数字家堂'} />;
 
   function get(rel: Relation) { return persons.find((p) => p.relation === rel) ?? null; }
@@ -91,96 +92,67 @@ export default function TreePage() {
   const filledParents = PARENT_RELS.filter((r) => Boolean(get(r))).length;
 
   return (
-    <div className="min-h-screen bg-[#F8F1E7]">
-      <AppHeader
-        title={`${family.surname}家三代谱`}
-        backHref="/family"
-        rightElement={
-          <button onClick={() => add('father')}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 transition-colors hover:bg-stone-200"
-            aria-label="添加成员">
-            <Plus size={18} strokeWidth={2.4} />
-          </button>
-        }
+    <MobilePage>
+      <MobileStatusBar />
+      <MobileTopBar
+        title="三代谱"
+        right={<button onClick={() => add('father')} className="min-h-[44px] px-3 text-sm font-medium flex items-center">更多</button>}
       />
 
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-4">
-        {/* Header card */}
-        <div className="rounded-2xl bg-#5A3524 p-5 text-white">
-          <p className="text-xs text-white/40 tracking-widest font-medium">家族关系</p>
-          <h1 className="mt-0.5 text-xl font-bold">{family.displayName}</h1>
-          <p className="mt-1 text-sm text-white/55">
-            {persons.length} 位家人 · 祖辈 {filledGrandparents}/4 · 父母 {filledParents}/2
-          </p>
+      <div className="relative z-10 px-5 pb-6">
+        <div className="mb-5 flex justify-center">
+          <TreeViewSwitcher current="list" />
         </div>
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Link href="/family/tree/graph"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-#5A3524 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">
-            <Network size={14} />关系图
-          </Link>
-          <Link href="/family/members"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-[#F8F1E7] transition-colors">
-            <Users size={14} />成员列表
-          </Link>
-          <Link href="/family/settings"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-[#F8F1E7] transition-colors">
-            <Settings size={14} />设置
-          </Link>
-          <Link href="/family/output"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">
-            <FileText size={14} />成果物
-          </Link>
-        </div>
+        <div className="rounded-[16px] border border-[var(--line-1)] bg-white/62 px-4 py-5 shadow-warm-sm">
+          <p className="mb-4 text-center text-[13px] text-[var(--ink-3)]">
+            {family.displayName} · {persons.length} 位家人 · 祖辈 {filledGrandparents}/4 · 父母 {filledParents}/2
+          </p>
 
         {/* Generations */}
-        <GenRow label="祖辈" badge={filledGrandparents > 0 ? `已录入 ${filledGrandparents}/4` : '尚未录入'}>
-          {GRANDPARENT_RELS.map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} />)}
-        </GenRow>
-        <Connector />
-        <GenRow label="父母" badge={filledParents > 0 ? `已录入 ${filledParents}/2` : '尚未录入'}>
-          {PARENT_RELS.map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} />)}
-        </GenRow>
-        <Connector />
-        <GenRow label="本人 / 配偶 / 兄弟姐妹">
-          {siblings.map((s) => <PersonNode key={s.id} person={s} relation="sibling" />)}
-          {selfPerson && <PersonNode person={selfPerson} relation="self" isOwner />}
-          <PersonNode person={spouse} relation="spouse" onAdd={() => add('spouse')} />
-          <PersonNode person={null} relation="sibling" onAdd={() => add('sibling')} />
-        </GenRow>
-        <Connector />
-        <GenRow label="子女" badge={children.length > 0 ? `${children.length} 位` : '尚未录入'}>
-          {children.map((c) => <PersonNode key={c.id} person={c} relation="child" />)}
-          <PersonNode person={null} relation="child" onAdd={() => add('child')} />
-        </GenRow>
+          <GenRow label="第一代">
+            {GRANDPARENT_RELS.slice(0, 2).map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} compact />)}
+          </GenRow>
+          <TreeLine />
+          <GenRow label="第二代">
+            {PARENT_RELS.map((r) => <PersonNode key={r} person={get(r)} relation={r} onAdd={() => add(r)} />)}
+          </GenRow>
+          <TreeLine />
+          <GenRow label="第三代">
+            {selfPerson && <PersonNode person={selfPerson} relation="self" isOwner />}
+            {spouse && <PersonNode person={spouse} relation="spouse" />}
+            {siblings.slice(0, 1).map((s) => <PersonNode key={s.id} person={s} relation="sibling" />)}
+            {children.slice(0, 1).map((c) => <PersonNode key={c.id} person={c} relation="child" />)}
+            <PersonNode person={null} relation="child" onAdd={() => add('child')} compact />
+          </GenRow>
+        </div>
 
         {/* Legend */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-4">
-          <p className="mb-2 text-xs font-semibold text-stone-500">图例</p>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-stone-500">
-            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-#5A3524 ring-1 ring-amber-400 ring-offset-1 ring-offset-white" />本人</span>
-            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-stone-200" />已录入</span>
-            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full border-2 border-dashed border-stone-300" />待添加</span>
+        <div className="mt-4 rounded-[15px] border border-[var(--line-1)] bg-white/72 p-4">
+          <p className="mb-2 text-xs font-semibold text-[var(--ink-3)]">图例</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-[var(--ink-3)]">
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-[var(--walnut)] ring-1 ring-amber-400 ring-offset-1 ring-offset-white" />本人</span>
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full bg-[var(--line-1)]" />已录入</span>
+            <span className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-full border-2 border-dashed border-[var(--line-2)]" />待添加</span>
             <StatusBadge variant="warning">待认领</StatusBadge>
           </div>
         </div>
       </div>
-    </div>
+    </MobilePage>
   );
 }
 
-function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
+function PersonNode({ person, relation, onAdd, isOwner = false, compact = false }: NodeProps & { compact?: boolean }) {
   const label = treeRelationLabel(relation, person);
 
   if (!person) {
     return (
       <button onClick={onAdd} className="group flex w-[76px] flex-col items-center gap-1.5" aria-label={`添加${label}`}>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-[#F8F1E7] transition-all group-hover:border-amber-400 group-active:scale-95">
-          <Plus size={20} className="text-stone-300 group-hover:text-amber-500" />
+        <div className={`${compact ? 'h-11 w-11' : 'h-14 w-14'} flex items-center justify-center rounded-[12px] border-2 border-dashed border-[var(--line-2)] bg-[var(--surface-2)] transition-all group-hover:border-amber-400 group-active:scale-95`}>
+          <Plus size={20} className="text-[var(--ink-3)] group-hover:text-amber-500" />
         </div>
-        <span className="w-full truncate text-center text-[11px] leading-tight text-stone-400">{label}</span>
-        <span className="text-[10px] text-stone-300">添加</span>
+        <span className="w-full truncate text-center text-[11px] leading-tight text-[var(--ink-3)]">{label}</span>
+        <span className="text-[10px] text-[var(--ink-3)]">添加</span>
       </button>
     );
   }
@@ -188,41 +160,38 @@ function PersonNode({ person, relation, onAdd, isOwner = false }: NodeProps) {
   return (
     <div className="flex w-[76px] flex-col items-center gap-1.5">
       <div className={cn(
-        'flex h-14 w-14 shrink-0 select-none items-center justify-center rounded-2xl text-lg font-semibold',
-        isOwner ? 'bg-#5A3524 text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-stone-50'
-          : 'bg-stone-100 text-#6D4C41'
+        `${compact ? 'h-11 w-11 text-sm' : 'h-14 w-14 text-lg'} flex shrink-0 select-none items-center justify-center rounded-[12px] border border-white font-semibold shadow-warm-soft`,
+        isOwner ? 'bg-[var(--walnut)] text-white ring-2 ring-amber-400 ring-offset-2 ring-offset-[var(--surface-1)]'
+          : 'bg-[var(--surface-3)] text-[var(--ink-3)]'
       )}>
         {person.name.charAt(0)}
       </div>
-      <span className="w-full truncate text-center text-[11px] font-medium text-stone-800">{person.name}</span>
-      <span className="text-center text-[10px] text-stone-500">{label}</span>
+      <span className="w-full truncate text-center text-[11px] font-medium text-[var(--ink-1)]">{person.name}</span>
+      <span className="text-center text-[10px] text-[var(--ink-3)]">{label}</span>
       {person.claimStatus !== 'claimed' && !isOwner && (
-        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">待认领</span>
+        <span className="rounded-full bg-warning-light px-1.5 py-0.5 text-[10px] font-medium text-warning">待认领</span>
       )}
     </div>
   );
 }
 
-function GenRow({ label, badge, children }: { label: string; badge?: string; children: React.ReactNode }) {
+function GenRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-wider text-stone-500">{label}</span>
-        {badge && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">{badge}</span>}
-      </div>
-      <div className="flex flex-wrap items-start justify-start gap-3">{children}</div>
+    <div className="grid grid-cols-[52px_1fr] items-start gap-2">
+      <span className="pt-7 text-[13px] font-medium text-[var(--ink-3)]">{label}</span>
+      <div className="flex min-h-[92px] flex-wrap items-start justify-center gap-3">{children}</div>
     </div>
   );
 }
 
-function Connector() {
-  return <div className="flex justify-center py-0.5"><div className="h-5 w-px bg-stone-300" /></div>;
+function TreeLine() {
+  return <div className="mx-auto my-1 h-8 w-px bg-[var(--gold)]" />;
 }
 
 function CenteredText({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8F1E7] px-4 text-center">
-      <p className="text-sm text-stone-500">{text}</p>
+    <div className="wj-page flex min-h-screen items-center justify-center px-4 text-center">
+      <p className="text-sm text-[var(--ink-3)]">{text}</p>
     </div>
   );
 }

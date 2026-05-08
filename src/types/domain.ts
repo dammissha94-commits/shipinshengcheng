@@ -10,7 +10,7 @@ export type Relation =
   | 'grandfather_maternal'
   | 'grandmother_maternal';
 
-export type ClaimStatus = 'unclaimed' | 'claimed' | 'disputed';
+export type ClaimStatus = 'unclaimed' | 'claimed' | 'disputed' | 'rejected' | 'hidden';
 export type Visibility = 'private' | 'family' | 'public';
 export type Gender = 'male' | 'female' | 'unknown';
 export type MeetingType = 'notice' | 'vote' | 'event' | 'memorial_day';
@@ -43,7 +43,7 @@ export type RelationType =
   | 'grandparent_of';
 export type RelationStatus = 'active' | 'pending' | 'disputed' | 'removed';
 export type InviteType = 'join_family' | 'claim_person';
-export type InviteStatus = 'pending' | 'claimed' | 'expired' | 'revoked';
+export type InviteStatus = 'pending' | 'claimed' | 'expired' | 'revoked' | 'rejected';
 
 export interface Profile {
   id: string;

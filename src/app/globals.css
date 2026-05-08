@@ -1,18 +1,135 @@
 @import "tailwindcss";
 
+/* =========================================================================
+ * 吾家祠堂 · 设计 Token 系统
+ * 双层架构：
+ *   1) Palette 层 — 实值 hex / rgba（唯一真相源）
+ *   2) Semantic 层 — 语义别名（指向 palette，方便主题切换）
+ *
+ * 所有页面消费的 var(--surface-1) / var(--ink-1) / var(--gold) 等都在
+ * 此处定义。修改主题只动 Palette 层即可，不要再让任何变量自引用。
+ * ========================================================================= */
+
 :root {
-  --pine: #1E3A2F;
-  --pine-light: #2A4E3E;
-  --cream: #F5F2EB;
-  --sand: #E2DDD4;
-  --sand-light: #EEE9E0;
-  --gold: #9E8448;
-  --gold-light: #C4AA6A;
-  --charcoal: #1F1F1F;
-  --muted: #7A746E;
-  --card-bg: #FDFAF5;
+  /* ----- Palette · Surfaces（暖纸面） ----- */
+  --surface-1: #FFFDF7;          /* 主卡片底色 · 近白纸 */
+  --surface-2: #F5EBD7;          /* 页面底色 · 米色 */
+  --surface-3: #EBDDC0;          /* 次级容器 · 沙金 */
+
+  /* ----- Palette · Ink（暖深字） ----- */
+  --ink-1: #2A1F18;              /* 主文本 · 黑檀 */
+  --ink-2: #5A3524;              /* 次级文本 · 核桃 */
+  --ink-3: #7A5640;              /* 辅助文本 · 深咖（vs surface-2 = 5.3:1，过 WCAG AA） */
+  --ink-placeholder: #A38C6F;    /* placeholder（仅在 input 中使用，不承载语义） */
+
+  /* ----- Palette · Lines ----- */
+  --line-1: #E8D5B7;             /* 浅边线 */
+  --line-2: #D4BB91;             /* 深边线 */
+
+  /* ----- Palette · Brand Accent ----- */
+  --walnut: #5A3524;             /* 主色 · 核桃 */
+  --walnut-light: #8B5A3C;       /* 主色亮态 */
+  --gold: #B8924E;               /* 强调金 */
+  --gold-light: #D8B97E;         /* 浅金 */
+  --jade: #6F8A79;               /* 玉绿 */
+  --terracotta: #C26946;         /* 陶土红 */
+  --pine: #244638;               /* 松绿 */
+  --pine-light: #315A49;
+
+  /* ----- Palette · Semantic State ----- */
+  --danger: #B91C1C;
+  --danger-light: #FEF2F2;
+  --warning: #B45309;
+  --warning-light: #FFFBEB;
+  --success: #15803D;
+  --success-light: #F0FDF4;
+
+  /* ----- Semantic 别名（兼容历史命名） ----- */
+  --cream: var(--surface-2);
+  --sand: var(--surface-3);
+  --sand-light: var(--surface-2);
+  --paper: var(--surface-2);
+  --charcoal: var(--ink-1);
+  --muted: var(--ink-3);
+  --card-bg: var(--surface-1);
+
+  /* ----- Elevation · 三档收敛 ----- */
+  --elev-1: 0 4px 12px rgba(90, 53, 36, 0.06);
+  --elev-2: 0 12px 28px rgba(90, 53, 36, 0.10);
+  --elev-3: 0 24px 56px rgba(90, 53, 36, 0.18);
+
+  /* ----- Shadow 别名（保留旧 token 名以避免 38 个文件大改） ----- */
+  --shadow-warm-xs: var(--elev-1);
+  --shadow-warm-sm: var(--elev-1);
+  --shadow-warm: var(--elev-2);
+  --shadow-warm-md: var(--elev-2);
+  --shadow-warm-lg: var(--elev-2);
+  --shadow-warm-xl: var(--elev-3);
+  --shadow-warm-2xl: var(--elev-3);
+  --shadow-warm-top: 0 -8px 28px rgba(90, 53, 36, 0.10);
+  --shadow-container: 0 0 80px rgba(90, 53, 36, 0.10);
+  --shadow-gold-sm: 0 8px 22px rgba(184, 146, 78, 0.16);
+  --shadow-warm-soft: 0 8px 18px rgba(90, 53, 36, 0.18);
+
+  /* ----- Radius · 六档收敛 ----- */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+
+  /* ----- Layout ----- */
+  --bottom-nav-h: 92px;
+  --content-max: 430px;          /* 移动端容器最大宽 */
 }
 
+/* Dark theme（启用方式：<html data-theme="dark">） */
+[data-theme="dark"] {
+  --surface-1: #1F1611;
+  --surface-2: #1A120D;
+  --surface-3: #2A1E15;
+  --ink-1: #F5EBD7;
+  --ink-2: #E0C896;
+  --ink-3: #A89478;
+  --ink-placeholder: #6E5B47;
+  --line-1: #3A2C20;
+  --line-2: #4D3A2A;
+  --walnut: #C49A6B;
+  --walnut-light: #D8B286;
+  --gold: #E0BE7C;
+  --gold-light: #F0D89A;
+  --elev-1: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --elev-2: 0 12px 28px rgba(0, 0, 0, 0.46);
+  --elev-3: 0 24px 56px rgba(0, 0, 0, 0.58);
+}
+
+/**
+ * 高对比度模式（启用方式：<html data-contrast="high">）
+ * 与 light/dark 主题正交：可叠加（深色 + 高对比也合法）
+ *
+ * 设计目标：所有文本对比度 ≥ 7:1（WCAG AAA），边线提粗、焦点环更明显。
+ */
+[data-contrast="high"] {
+  --ink-1: #000000;
+  --ink-2: #1A0F08;
+  --ink-3: #3A2516;
+  --line-1: #7A5640;
+  --line-2: #5A3524;
+}
+[data-theme="dark"][data-contrast="high"] {
+  --ink-1: #FFFEF8;
+  --ink-2: #FFF1D2;
+  --ink-3: #E0C896;
+  --line-1: #7A5640;
+  --line-2: #A89478;
+}
+[data-contrast="high"] :focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* @theme inline 把 CSS 变量曝露为 Tailwind utility 名（bg-walnut / text-ink-1 等） */
 @theme inline {
   --color-pine: var(--pine);
   --color-pine-light: var(--pine-light);
@@ -24,8 +141,39 @@
   --color-charcoal: var(--charcoal);
   --color-muted: var(--muted);
   --color-card: var(--card-bg);
+  --color-walnut: var(--walnut);
+  --color-walnut-light: var(--walnut-light);
+  --color-terracotta: var(--terracotta);
+  --color-paper: var(--paper);
+  --color-jade: var(--jade);
+  --color-danger: var(--danger);
+  --color-danger-light: var(--danger-light);
+  --color-warning: var(--warning);
+  --color-warning-light: var(--warning-light);
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line-1: var(--line-1);
+  --color-line-2: var(--line-2);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --shadow-warm-xs: var(--shadow-warm-xs);
+  --shadow-warm-sm: var(--shadow-warm-sm);
+  --shadow-warm: var(--shadow-warm);
+  --shadow-warm-md: var(--shadow-warm-md);
+  --shadow-warm-lg: var(--shadow-warm-lg);
+  --shadow-warm-xl: var(--shadow-warm-xl);
+  --shadow-warm-2xl: var(--shadow-warm-2xl);
+  --shadow-warm-top: var(--shadow-warm-top);
+  --shadow-container: var(--shadow-container);
+  --shadow-gold-sm: var(--shadow-gold-sm);
+  --shadow-warm-soft: var(--shadow-warm-soft);
 }
 
+/* ============== Base ============== */
 *,
 *::before,
 *::after {
@@ -39,14 +187,45 @@ html {
 
 body {
   min-height: 100%;
-  background-color: var(--cream);
-  color: var(--charcoal);
+  background:
+    radial-gradient(circle at 14% 10%, rgba(216, 185, 126, 0.20), transparent 28rem),
+    radial-gradient(circle at 92% 14%, rgba(111, 138, 121, 0.16), transparent 24rem),
+    linear-gradient(180deg, var(--surface-2) 0%, var(--surface-2) 48%, #F3E7D6 100%);
+  color: var(--ink-1);
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif;
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(216, 185, 126, 0.10), transparent 28rem),
+    radial-gradient(circle at 92% 14%, rgba(111, 138, 121, 0.08), transparent 24rem),
+    var(--surface-2);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.32;
+  background-image:
+    linear-gradient(rgba(90, 53, 36, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 53, 36, 0.026) 1px, transparent 1px);
+  background-size: 22px 22px, 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.10;
+  background-image:
+    linear-gradient(rgba(245, 235, 215, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 235, 215, 0.03) 1px, transparent 1px);
 }
 
 input,
@@ -56,8 +235,8 @@ select {
 }
 
 ::selection {
-  background-color: rgba(158, 132, 72, 0.25);
-  color: var(--charcoal);
+  background-color: rgba(184, 146, 78, 0.28);
+  color: var(--ink-1);
 }
 
 :focus-visible {
@@ -75,19 +254,191 @@ select {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--sand);
+  background: var(--line-2);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+  background: var(--ink-3);
 }
 
-/* Mobile safe-area bottom padding for pages with sticky buttons */
+/* ============== Layout helpers ============== */
 .pb-safe {
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
-/* Elder mode: larger fonts, bigger tap targets */
+.pb-safe-nav {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+}
+
+/* ============== A11y · 触控热区 ============== */
+/* Apple HIG / Material 推荐 ≥44pt/48dp。给小图标按钮加 .tap-target 即满足 */
+.tap-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* sr-only — 屏幕阅读器可见但视觉隐藏（用于装饰按钮加 aria-label 文字） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* skip-to-content — 键盘用户跳过导航直达主内容 */
+.skip-to-content {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  padding: 12px 20px;
+  background: var(--walnut);
+  color: var(--surface-1);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 0 0 var(--radius-sm) 0;
+  transform: translateY(-110%);
+  transition: transform 0.18s ease;
+}
+.skip-to-content:focus {
+  transform: translateY(0);
+}
+
+/* ============== Wj form controls ============== */
+.wj-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line-1);
+  background: var(--surface-1);
+  color: var(--ink-1);
+  font-size: 15px;
+  line-height: 1.6;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.wj-input::placeholder {
+  color: var(--ink-placeholder);
+}
+.wj-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184, 146, 78, 0.18);
+}
+.wj-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+textarea.wj-input {
+  min-height: 96px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  resize: vertical;
+}
+
+select.wj-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%238A7465' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.wj-toggle {
+  position: relative;
+  display: inline-flex;
+  height: 28px;
+  width: 48px;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--line-2);
+  transition: background 0.18s ease;
+  flex-shrink: 0;
+}
+.wj-toggle[data-on="true"] {
+  background: var(--walnut);
+}
+.wj-toggle::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  height: 22px;
+  width: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(90, 53, 36, 0.18);
+  transition: transform 0.18s ease;
+}
+.wj-toggle[data-on="true"]::after {
+  transform: translateX(20px);
+}
+
+/* ============== Page / Card primitives ============== */
+.wj-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(216, 185, 126, 0.22), transparent 18rem),
+    radial-gradient(circle at 88% 4%, rgba(111, 138, 121, 0.16), transparent 16rem),
+    linear-gradient(180deg, var(--surface-2) 0%, var(--surface-2) 54%, #F2E3CF 100%);
+}
+
+[data-theme="dark"] .wj-page {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(216, 185, 126, 0.10), transparent 18rem),
+    radial-gradient(circle at 88% 4%, rgba(111, 138, 121, 0.08), transparent 16rem),
+    var(--surface-2);
+}
+
+.wj-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+
+.wj-card {
+  border: 1px solid var(--line-1);
+  background: color-mix(in oklab, var(--surface-1) 88%, transparent);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(14px);
+}
+
+.wj-card-solid {
+  border: 1px solid var(--line-1);
+  background: var(--surface-1);
+  box-shadow: var(--elev-1);
+}
+
+.wj-primary {
+  background: linear-gradient(135deg, var(--walnut) 0%, var(--walnut-light) 100%);
+  color: var(--surface-1);
+  box-shadow: 0 14px 28px rgba(90, 53, 36, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.wj-primary:hover {
+  background: linear-gradient(135deg, #4B2D20 0%, #6D3F2D 100%);
+}
+
+.wj-section-title {
+  color: var(--ink-2);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.wj-muted {
+  color: var(--ink-3);
+}
+
+/* ============== Elder mode（长辈模式） ============== */
 .elder-mode {
   font-size: 18px;
 }
@@ -95,21 +446,22 @@ select {
 .elder-mode button,
 .elder-mode a[role="button"],
 .elder-mode .btn {
-  min-height: 48px;
-  min-width: 48px;
-  font-size: 17px;
+  min-height: 56px;
+  min-width: 56px;
+  font-size: 18px;
 }
 
 .elder-mode input,
 .elder-mode select,
 .elder-mode textarea {
-  font-size: 17px;
-  padding: 12px 16px;
+  font-size: 18px;
+  padding: 14px 16px;
+  min-height: 56px;
 }
 
-.elder-mode h1 { font-size: 1.75rem; }
-.elder-mode h2 { font-size: 1.35rem; }
-.elder-mode h3 { font-size: 1.15rem; }
+.elder-mode h1 { font-size: 1.85rem; }
+.elder-mode h2 { font-size: 1.45rem; }
+.elder-mode h3 { font-size: 1.20rem; }
 
 .elder-mode .text-xs { font-size: 14px; }
 .elder-mode .text-sm { font-size: 16px; }
@@ -117,7 +469,31 @@ select {
 .elder-mode .text-\[11px\] { font-size: 14px; }
 .elder-mode .text-\[10px\] { font-size: 13px; }
 
-/* Masonry grid for photo album */
+/* ============== Skeleton（骨架屏） ============== */
+.wj-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-3);
+  border-radius: 12px;
+}
+.wj-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    rgba(255, 253, 247, 0.55) 50%,
+    transparent 100%
+  );
+  animation: wj-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes wj-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ============== Masonry grid for photo album ============== */
 .masonry-grid {
   column-count: 2;
   column-gap: 0.75rem;
@@ -130,4 +506,16 @@ select {
 }
 .masonry-item {
   break-inside: avoid;
+}
+
+/* ============== Reduced motion ============== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

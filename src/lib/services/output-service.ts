@@ -1,5 +1,6 @@
 import type {
   ActionLog,
+  FamilyCalendarEvent,
   FamilyOutput,
   FamilyPhoto,
   FamilySpace,
@@ -32,6 +33,51 @@ import { throwServiceError } from './service-client';
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 
+export type FamilyOutputListItem = Pick<
+  FamilyOutput,
+  | 'id'
+  | 'family_id'
+  | 'creator_user_id'
+  | 'output_type'
+  | 'title'
+  | 'description'
+  | 'status'
+  | 'generated_url'
+  | 'visibility'
+  | 'created_at'
+  | 'updated_at'
+>;
+
+export type FamilyPrintOutputPerson = Pick<
+  PersonProfile,
+  'id' | 'display_name' | 'gender' | 'birth_year' | 'living_status' | 'claim_status'
+>;
+
+export type FamilyPrintOutputRelation = Pick<
+  PersonRelation,
+  'id' | 'from_person_id' | 'to_person_id' | 'relation_type'
+>;
+
+export type FamilyPrintOutputStory = Pick<
+  FamilyStory,
+  'id' | 'title' | 'content' | 'story_year' | 'created_at' | 'status'
+>;
+
+export type FamilyPrintOutputEvent = Pick<
+  FamilyCalendarEvent,
+  'id' | 'title' | 'event_type' | 'event_date' | 'status'
+>;
+
+export interface FamilyPrintOutputData {
+  persons: FamilyPrintOutputPerson[];
+  relations: FamilyPrintOutputRelation[];
+  stories: FamilyPrintOutputStory[];
+  events: FamilyPrintOutputEvent[];
+}
+
+type PreviewStoryRow = Pick<FamilyStory, 'id' | 'title' | 'story_year'>;
+type PreviewPhotoRow = Pick<FamilyPhoto, 'id' | 'title' | 'photo_year'>;
+
 function getClient(client?: SupabaseServiceClient): SupabaseServiceClient | null {
   if (client) return client;
   return hasSupabaseConfig() ? createSupabaseServiceClient() : null;
@@ -63,7 +109,7 @@ async function getOutput(outputId: string, client: SupabaseServiceClient): Promi
   const result = await client.from<FamilyOutput>('family_outputs').select('*').eq('id', outputId);
   throwServiceError(result.error, 'get family output failed');
   const output = result.data?.[0];
-  if (!output) throw new Error('成果物记录不存在');
+  if (!output) throw new Error('家堂档案记录不存在');
   return output;
 }
 
@@ -90,7 +136,7 @@ function compactPeople(
     });
 }
 
-function recentStories(stories: FamilyStory[]) {
+function recentStories(stories: PreviewStoryRow[]) {
   return stories.slice(0, 6).map((story) => ({
     id: story.id,
     title: story.title,
@@ -98,7 +144,7 @@ function recentStories(stories: FamilyStory[]) {
   }));
 }
 
-function recentPhotos(photos: FamilyPhoto[]) {
+function recentPhotos(photos: PreviewPhotoRow[]) {
   return photos.slice(0, 6).map((photo) => ({
     id: photo.id,
     title: photo.title,
@@ -107,7 +153,7 @@ function recentPhotos(photos: FamilyPhoto[]) {
 }
 
 export async function getOutputPageViewData(familyId: string): Promise<{
-  outputs: FamilyOutput[];
+  outputs: FamilyOutputListItem[];
   canCreate: boolean;
 }> {
   const role = await getUserFamilyRole(familyId);
@@ -115,8 +161,8 @@ export async function getOutputPageViewData(familyId: string): Promise<{
 
   const client = createSupabaseServiceClient();
   const result = await client
-    .from<FamilyOutput>('family_outputs')
-    .select('*')
+    .from<FamilyOutputListItem>('family_outputs')
+    .select('id,family_id,creator_user_id,output_type,title,description,status,generated_url,visibility,created_at,updated_at')
     .eq('family_id', familyId)
     .order('created_at', { ascending: false });
 
@@ -125,6 +171,57 @@ export async function getOutputPageViewData(familyId: string): Promise<{
   return {
     outputs: result.data ?? [],
     canCreate: role === 'owner' || role === 'family_admin' || role === 'memory_admin',
+  };
+}
+
+export async function canCreateFamilyOutputForCurrentUser(familyId: string): Promise<boolean> {
+  const role = await getUserFamilyRole(familyId);
+  if (!role) throw new Error('你暂无权限执行此操作');
+  return role === 'owner' || role === 'family_admin' || role === 'memory_admin';
+}
+
+export async function getFamilyPrintOutputData(
+  familyId: string,
+  client?: SupabaseServiceClient
+): Promise<FamilyPrintOutputData> {
+  const resolvedClient = requireClient(client);
+  if (!(await isFamilyMember(familyId))) throw new Error('你暂无权限执行此操作');
+
+  const [personsResult, relationsResult, storiesResult, eventsResult] = await Promise.all([
+    resolvedClient
+      .from<FamilyPrintOutputPerson>('person_profiles')
+      .select('id,display_name,gender,birth_year,living_status,claim_status')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: true }),
+    resolvedClient
+      .from<FamilyPrintOutputRelation>('person_relations')
+      .select('id,from_person_id,to_person_id,relation_type')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: true }),
+    resolvedClient
+      .from<FamilyPrintOutputStory>('family_stories')
+      .select('id,title,content,story_year,created_at,status')
+      .eq('family_id', familyId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false }),
+    resolvedClient
+      .from<FamilyPrintOutputEvent>('family_calendar_events')
+      .select('id,title,event_type,event_date,status')
+      .eq('family_id', familyId)
+      .eq('status', 'active')
+      .order('event_date', { ascending: true }),
+  ]);
+
+  throwServiceError(personsResult.error, 'get print output persons failed');
+  throwServiceError(relationsResult.error, 'get print output relations failed');
+  throwServiceError(storiesResult.error, 'get print output stories failed');
+  throwServiceError(eventsResult.error, 'get print output events failed');
+
+  return {
+    persons: personsResult.data ?? [],
+    relations: relationsResult.data ?? [],
+    stories: storiesResult.data ?? [],
+    events: eventsResult.data ?? [],
   };
 }
 
@@ -341,14 +438,14 @@ export async function generateFamilyMemoryBookPreview(
   const [family, storiesResult, photosResult] = await Promise.all([
     getFamily(familyId, resolvedClient),
     resolvedClient
-      .from<FamilyStory>('family_stories')
-      .select('*')
+      .from<PreviewStoryRow>('family_stories')
+      .select('id,title,story_year')
       .eq('family_id', familyId)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
     resolvedClient
-      .from<FamilyPhoto>('family_photos')
-      .select('*')
+      .from<PreviewPhotoRow>('family_photos')
+      .select('id,title,photo_year')
       .eq('family_id', familyId)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
@@ -376,13 +473,30 @@ export async function generateFamilyStoryBookPreview(
   familyId: string,
   client?: SupabaseServiceClient
 ): Promise<FamilyStoryBookPreview> {
-  const memoryPreview = await generateFamilyMemoryBookPreview(familyId, client);
+  const resolvedClient = requireClient(client);
+  const user = await getCurrentUser();
+  if (!user) throw new Error('璇峰厛鐧诲綍');
+  if (!(await isFamilyMember(familyId))) throw new Error('浣犳殏鏃犳潈闄愭墽琛屾鎿嶄綔');
+
+  const [family, storiesResult] = await Promise.all([
+    getFamily(familyId, resolvedClient),
+    resolvedClient
+      .from<PreviewStoryRow>('family_stories')
+      .select('id,title,story_year')
+      .eq('family_id', familyId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false }),
+  ]);
+
+  throwServiceError(storiesResult.error, 'generate story preview stories failed');
+
+  const stories = storiesResult.data ?? [];
   return {
     familyId,
-    familyName: memoryPreview.familyName,
-    surname: memoryPreview.surname,
-    storyCount: memoryPreview.storyCount,
-    storyTitles: memoryPreview.recentStories.map((story) => story.title),
+    familyName: family.display_name,
+    surname: family.surname,
+    storyCount: stories.length,
+    storyTitles: recentStories(stories).map((story) => story.title),
     generatedAt: new Date().toISOString(),
   };
 }

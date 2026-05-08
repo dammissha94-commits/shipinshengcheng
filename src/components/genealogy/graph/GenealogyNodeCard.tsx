@@ -92,7 +92,7 @@ function GenealogyNodeCardComponent({ data }: NodeProps) {
         <Link
           href={`/family/members/${node.id}`}
           onClick={(event) => event.stopPropagation()}
-          className="shrink-0 font-medium text-pine"
+          className="shrink-0 font-medium text-pine min-h-[44px] inline-flex items-center"
         >
           查看档案
         </Link>

@@ -12,10 +12,10 @@ interface StatusBadgeProps {
 }
 
 const VARIANT_CLASSES: Record<StatusVariant, string> = {
-  default: 'bg-#F0E6D5 text-#8D6E63',
-  success: 'bg-#F0E6D5 text-#8D6E63',
+  default: 'border border-[var(--surface-2)] bg-[var(--surface-3)] text-[var(--walnut-light)]',
+  success: 'border border-[var(--surface-3)] bg-[var(--surface-3)] text-[var(--jade)]',
   warning: 'bg-amber-50 text-amber-700',
-  muted: 'bg-stone-100 text-stone-500',
+  muted: 'border border-[var(--line-1)] bg-[var(--surface-2)] text-[var(--ink-3)]',
   danger: 'bg-red-50 text-red-600',
 };
 
@@ -31,7 +31,7 @@ export default function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-relaxed',
+        'inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-relaxed shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]',
         VARIANT_CLASSES[variant],
         className
       )}

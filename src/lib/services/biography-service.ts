@@ -107,7 +107,7 @@ export async function createBiographyRecord(
 
   throwServiceError(insertResult.error, 'create biography record failed');
   const created = insertResult.data;
-  if (!created) throw new Error('创建生平记录失败');
+  if (!created) throw new Error('创建人生记忆失败');
 
   // Log action (fire-and-forget)
   resolvedClient.from<ActionLog>('action_logs').insert({

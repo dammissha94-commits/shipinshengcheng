@@ -14,12 +14,14 @@ const CLAIM_LABELS: Record<ClaimStatus, GenealogyClaimLabel> = {
   claimed: '已认领',
   unclaimed: '待认领',
   disputed: '有争议',
+  rejected: '已拒绝',
+  hidden: '已隐藏',
 };
 
 const LIVING_LABELS: Record<LivingStatus, GenealogyLivingLabel> = {
-  alive: '在世',
-  deceased: '已故',
-  unknown: '未知',
+  alive: '健在',
+  deceased: '离世',
+  unknown: '未填写',
 };
 
 const RELATION_LABELS: Record<RelationType, GenealogyRelationLabel> = {
@@ -99,8 +101,8 @@ function buildRelationHint(profile: PersonProfile): string | null {
   const segments: string[] = [];
   if (profile.gender === 'male') segments.push('男');
   else if (profile.gender === 'female') segments.push('女');
-  if (profile.living_status === 'deceased') segments.push('已故');
-  else if (profile.living_status === 'alive') segments.push('在世');
+  if (profile.living_status === 'deceased') segments.push('离世');
+  else if (profile.living_status === 'alive') segments.push('健在');
   return segments.length > 0 ? segments.join(' · ') : null;
 }
 

@@ -122,7 +122,7 @@ function GenealogyGraphInner({
         onClick={exportImage}
         disabled={isExporting || nodes.length === 0}
         className={cn(
-          'absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-colors',
+          'absolute right-3 top-3 z-20 flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-xs font-medium shadow-sm transition-colors',
           'border-pine bg-cream text-pine hover:bg-pine hover:text-cream',
           (isExporting || nodes.length === 0) && 'pointer-events-none opacity-60'
         )}
@@ -134,13 +134,13 @@ function GenealogyGraphInner({
       {(errorMessage || successMessage) && (
         <div
           className={cn(
-            'absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-full border px-3 py-1.5 text-xs shadow-sm',
+            'absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-full border px-3 py-1.5 text-xs shadow-sm flex items-center',
             errorMessage
               ? 'border-red-200 bg-red-50 text-red-700'
-              : 'border-emerald-200 bg-#F0E6D5 text-#8D6E63'
+              : 'border-emerald-200 bg-[#F0E6D5] text-var(--walnut-light)'
           )}
         >
-          <button type="button" onClick={resetError} className="mr-2 opacity-70" aria-label="关闭提示">
+          <button type="button" onClick={resetError} className="mr-2 flex h-6 w-6 items-center justify-center rounded-full hover:bg-black/10" aria-label="关闭提示">
             x
           </button>
           {errorMessage || successMessage}

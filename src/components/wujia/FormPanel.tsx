@@ -27,19 +27,19 @@ export default function FormPanel({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-stone-200 bg-white shadow-sm',
+        'rounded-2xl border border-[var(--line-1)] bg-white shadow-sm',
         className
       )}
     >
       {(title || description) && (
-        <div className="border-b border-stone-100 px-5 py-4 sm:px-6">
+        <div className="border-b border-[var(--surface-2)] px-5 py-4 sm:px-6">
           {title && (
-            <h2 className="text-base font-semibold text-stone-800 sm:text-lg">
+            <h2 className="text-base font-semibold text-[var(--ink-1)] sm:text-lg">
               {title}
             </h2>
           )}
           {description && (
-            <p className="mt-0.5 text-sm text-stone-500">{description}</p>
+            <p className="mt-0.5 text-sm text-[var(--ink-3)]">{description}</p>
           )}
         </div>
       )}
@@ -47,7 +47,7 @@ export default function FormPanel({
       <div className="space-y-4 px-5 py-4 sm:px-6 sm:py-5">{children}</div>
 
       {footer && (
-        <div className="border-t border-stone-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-[var(--surface-2)] px-5 py-4 sm:px-6">
           {footer}
         </div>
       )}

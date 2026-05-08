@@ -11,8 +11,12 @@ import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import { createFamilyMeeting, listFamilyMeetings } from '@/lib/services/meeting-service';
 import type { FamilyMeeting, FamilyRole, FamilySpace, MeetingType, Visibility } from '@/types/domain';
-import AppHeader from '@/components/AppHeader';
 import StatusBadge from '@/components/wujia/StatusBadge';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import EmptyState from '@/components/wujia/EmptyState';
+import { NoMeetingsIllustration } from '@/components/illustrations';
+import { WjFormRow, WjInput, WjSelect, WjTextarea, WjButton } from '@/components/wujia/WjForm';
+import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
 
 const MEETING_TYPE_LABELS: Record<MeetingType, string> = { notice: '通知', vote: '投票', event: '家庭聚会', memorial_day: '纪念日' };
 const TYPE_FILTERS: { value: MeetingType | 'all'; label: string }[] = [
@@ -81,80 +85,91 @@ export default function MeetingsPage() {
     finally { setSubmitting(false); }
   }
 
-  if (loading) return <C text="加载中..." />;
+  if (loading) return <PageSkeleton title="家族议事" backHref="/family" cards={3} withStats={false} withSearch={false} />;
   if (!hasSupabaseConfig()) return <S r={null}><P text="尚未配置 Supabase 环境变量，请先配置 .env.local" /></S>;
   if (error && !family) return <S r={null}><P text={error} /></S>;
 
   return (
-    <S r={canCreateMeeting ? <button onClick={() => setShowForm((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-full text-#8D6E63 hover:bg-stone-200" aria-label="新增议题"><MessageSquarePlus size={17} /></button> : null}>
-      <main className="mx-auto max-w-lg px-4 py-6">
-        <div className="mb-5 rounded-2xl bg-#5A3524 p-5 text-white">
-          <p className="text-xs text-white/40 tracking-widest font-medium">家族议事</p>
-          <h1 className="mt-0.5 text-xl font-bold">{family?.displayName}</h1>
-          <p className="mt-1 text-sm text-white/55">{meetings.length} 条议题</p>
-        </div>
+    <S r={canCreateMeeting ? <button onClick={() => setShowForm((v) => !v)} className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--walnut-light)] hover:bg-[var(--surface-3)]" aria-label="新增议题"><MessageSquarePlus size={17} /></button> : null}>
+      <main className="relative z-10 space-y-5 px-5 pb-6">
+        <section className="rounded-[15px] border border-[#E7D9C9] bg-white/72 p-5 shadow-[0_10px_28px_rgba(90,53,36,0.06)]">
+          <p className="text-[13px] font-medium tracking-[0.18em] text-[#9B6A37]">家族议事</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#2A1D16]">{family?.displayName ?? '家族议事'}</h1>
+          <p className="mt-1 text-[14px] text-[#8A7465]">{meetings.length} 条议题 · 只在家族内部讨论</p>
+        </section>
 
-        {error && <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-4 rounded-xl bg-danger-light px-4 py-2.5 text-sm text-danger">{error}</p>}
 
         {!canCreateMeeting && (
-          <p className="mb-4 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-xs text-stone-500">你可以查看议题并在详情页发表意见；新增和管理议题由家堂管理员处理。</p>
+          <p className="mb-4 rounded-xl border border-[var(--line-1)] bg-white px-4 py-2.5 text-xs text-[var(--ink-3)]">你可以查看议题并在详情页发表意见；新增和管理议题由家堂管理员处理。</p>
         )}
 
         {showForm && canCreateMeeting && (
           <form onSubmit={handleSubmit} className="mb-5">
-            <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
-              <div className="border-b border-stone-100 px-5 py-4"><h2 className="text-base font-semibold text-stone-800">发布一条家族议题</h2></div>
+            <div className="rounded-[15px] border border-[#E7D9C9] bg-white/82 shadow-[0_10px_28px_rgba(90,53,36,0.06)]">
+              <div className="border-b border-[var(--surface-2)] px-5 py-4"><h2 className="text-base font-semibold text-[var(--ink-1)]">发布一条家族议题</h2></div>
               <div className="space-y-4 px-5 py-5">
-                <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">类型</span>
-                  <select value={form.meetingType} onChange={(e) => setForm({ ...form, meetingType: e.target.value as MeetingType })}
-                    className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
-                    {TYPE_FILTERS.filter((t) => t.value !== 'all').map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
-                </label>
-                <F label="标题" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
-                <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">内容</span>
-                  <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4}
-                    className="w-full resize-none rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" />
-                </label>
-                <F label="日期" type="date" value={form.eventDate} onChange={(v) => setForm({ ...form, eventDate: v })} />
-                <VS value={form.visibility} onChange={(v) => setForm({ ...form, visibility: v })} />
+                <WjFormRow label="类型">
+                  <WjSelect value={form.meetingType} onChange={(e) => setForm({ ...form, meetingType: e.target.value as MeetingType })}>
+                    {TYPE_FILTERS.filter((t) => t.value !== 'all').map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </WjSelect>
+                </WjFormRow>
+                <WjFormRow label="标题" required>
+                  <WjInput value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                </WjFormRow>
+                <WjFormRow label="内容">
+                  <WjTextarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={4} />
+                </WjFormRow>
+                <WjFormRow label="日期">
+                  <WjInput type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
+                </WjFormRow>
+                <WjFormRow label="可见范围">
+                  <WjSelect value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value as Visibility })}>
+                    {VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </WjSelect>
+                </WjFormRow>
               </div>
-              <div className="border-t border-stone-100 px-5 py-4 flex gap-3">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-500 hover:bg-[#F8F1E7] transition-colors">取消</button>
-                <button disabled={!form.title.trim() || submitting} className="flex-1 rounded-xl bg-#5A3524 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E disabled:opacity-50 transition-all active:scale-[0.98]">{submitting ? '发布中...' : '发布'}</button>
+              <div className="border-t border-[var(--surface-2)] px-5 py-4 flex gap-3">
+                <WjButton type="button" variant="secondary" onClick={() => setShowForm(false)}>取消</WjButton>
+                <WjButton type="submit" disabled={!form.title.trim() || submitting}>{submitting ? '发布中...' : '发布'}</WjButton>
               </div>
             </div>
           </form>
         )}
 
         <div className="mb-3 flex items-center gap-2.5">
-          <div className="h-4 w-[3px] rounded-full bg-amber-500/60" />
-          <h2 className="text-base font-semibold text-stone-800">议题列表</h2>
+          <div className="h-4 w-[3px] rounded-full bg-[var(--warning)]/60" />
+              <h2 className="text-base font-semibold text-[#2A1D16]">议题列表</h2>
         </div>
 
         <div className="mb-4 flex gap-2 overflow-x-auto">
           {TYPE_FILTERS.map((t) => (
             <button key={t.value} type="button" onClick={() => setFilter(t.value)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-                filter === t.value ? 'bg-#5A3524 text-white' : 'border border-stone-200 bg-white text-stone-500 hover:border-stone-300'
+              className={`shrink-0 rounded-full px-3.5 min-h-[44px] flex items-center text-xs font-medium transition-all ${
+                filter === t.value ? 'bg-[#5A3524] text-white' : 'bg-[#F4EBDD] text-[#8A7465]'
               }`}>{t.label}</button>
           ))}
         </div>
 
         {filteredMeetings.length === 0 ? (
-          <div className="rounded-2xl border border-stone-200 bg-white px-4 py-12 text-center text-sm text-stone-400">暂无{filter !== 'all' ? MEETING_TYPE_LABELS[filter] : ''}议题</div>
+          <EmptyState
+            illustration={filter === 'all' ? <NoMeetingsIllustration /> : undefined}
+            title={filter === 'all' ? '还没有议题' : `暂无${MEETING_TYPE_LABELS[filter]}议题`}
+            description={filter === 'all' ? '由家堂管理员发起家庭聚会、纪念日或投票' : '尝试其他类型筛选'}
+          />
         ) : (
           <div className="space-y-3">
             {filteredMeetings.map((meeting) => (
               <Link key={meeting.id} href={`/family/meetings/${meeting.id}`} className="block">
-                <article className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md">
+                <article className="rounded-[13px] border border-[#E7D9C9] bg-white/86 p-4 shadow-[0_8px_20px_rgba(90,53,36,0.05)] transition active:scale-[0.99]">
                   <div className="mb-2 flex items-start justify-between gap-3">
-                    <h3 className="min-w-0 flex-1 text-base font-semibold text-stone-800">{meeting.title}</h3>
+                    <h3 className="min-w-0 flex-1 text-base font-semibold text-[#2A1D16]">{meeting.title}</h3>
                     <StatusBadge>{MEETING_TYPE_LABELS[meeting.meeting_type]}</StatusBadge>
                   </div>
-                  <p className="line-clamp-3 text-sm text-stone-500">{meeting.content?.trim() || '暂无内容'}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs text-stone-400">
+                  <p className="line-clamp-3 text-sm text-[#8A7465]">{meeting.content?.trim() || '暂无内容'}</p>
+                  <div className="mt-3 flex items-center justify-between text-xs text-[#8A7465]">
                     <span>{formatDate(meeting.event_date)}</span>
-                    <span className={`${meeting.status === 'open' ? 'text-#8B5A3C' : meeting.status === 'closed' ? 'text-stone-500' : 'text-stone-400'} font-medium`}>{meetingStatusLabel(meeting.status)}</span>
+                    <span className={`${meeting.status === 'open' ? 'text-[var(--walnut)]' : meeting.status === 'closed' ? 'text-[var(--ink-3)]' : 'text-[var(--ink-3)]'} font-medium`}>{meetingStatusLabel(meeting.status)}</span>
                   </div>
                 </article>
               </Link>
@@ -167,22 +182,8 @@ export default function MeetingsPage() {
 }
 
 function S({ children, r }: { children: React.ReactNode; r: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#F8F1E7]"><AppHeader title="家族议事" backHref="/family" rightElement={r} />{children}</div>;
-}
-function C({ text }: { text: string }) {
-  return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">{text}</p></div>;
+  return <MobilePage><MobileStatusBar /><MobileTopBar title="家族议事" right={r} />{children}</MobilePage>;
 }
 function P({ text }: { text: string }) {
-  return <main className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4 text-center"><p className="rounded-2xl border border-stone-200 bg-white px-4 py-5 text-sm text-stone-500 shadow-sm">{text}</p></main>;
-}
-function F({ label, value, onChange, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean }) {
-  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">{label}{required && <span className="text-red-400"> *</span>}</span>
-    <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all" /></label>;
-}
-function VS({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
-  return <label className="block"><span className="block text-sm font-medium text-stone-700 mb-1.5">可见范围</span>
-    <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
-      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 focus:border-#8B5A3C focus:outline-none focus:ring-2 focus:ring-#8B5A3C/20 transition-all">
-      {VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;
+  return <main className="flex min-h-[70vh] items-center justify-center px-5 text-center"><p className="rounded-[15px] border border-[#E7D9C9] bg-white/82 px-4 py-5 text-sm text-[#8A7465]">{text}</p></main>;
 }

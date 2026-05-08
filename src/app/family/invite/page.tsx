@@ -11,9 +11,10 @@ import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
 import { createInviteToken, listPendingInvites } from '@/lib/services/invite-service';
 import type { PendingInviteTarget } from '@/lib/services/invite-service';
-import AppHeader from '@/components/AppHeader';
 import StatusBadge from '@/components/wujia/StatusBadge';
 import EmptyState from '@/components/wujia/EmptyState';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
 
 function buildInviteText(person: PersonProfile, familyDisplayName: string, token: string): string {
   const inviteUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/claim/${encodeURIComponent(token)}`;
@@ -63,30 +64,40 @@ export default function InvitePage() {
     }
   }
 
-  if (loading) return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center"><p className="text-sm text-stone-500">加载中…</p></div>;
-  if (error && !family) return <div className="min-h-screen bg-[#F8F1E7] flex items-center justify-center px-4 text-center"><p className="text-sm text-stone-500">{error}</p></div>;
+  if (loading) return <PageSkeleton title="邀请认领" backHref="/family" cards={3} withStats={false} withSearch={false} />;
+  if (error && !family) return <MobilePage><MobileStatusBar /><div className="flex min-h-[70vh] items-center justify-center px-5 text-center"><p className="text-sm text-[#8A7465]">{error}</p></div></MobilePage>;
 
   return (
-    <div className="min-h-screen bg-[#F8F1E7]">
-      <AppHeader title="邀请认领" backHref="/family" />
+    <MobilePage>
+      <MobileStatusBar />
+      <MobileTopBar title="邀请认领" />
 
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
+      <div className="relative z-10 space-y-5 px-5 pb-6">
         {/* Instructions */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <div className="rounded-[15px] border border-[#E7D9C9] bg-white/76 p-5 shadow-[0_10px_28px_rgba(90,53,36,0.06)]">
           <div className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-#F0E6D5 text-#8D6E63">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F4E8DC] text-[#8B5A3C]">
               <Share2 size={18} strokeWidth={1.8} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-stone-800">如何邀请？</h2>
-              <p className="mt-1 text-sm text-stone-500 leading-relaxed">
+              <h2 className="text-sm font-semibold text-[#2A1D16]">如何邀请？</h2>
+              <p className="mt-1 text-sm text-[#8A7465] leading-relaxed">
                 复制邀请文案后，通过微信等常用工具发送给家人。家人打开链接即可认领自己的档案。
               </p>
             </div>
           </div>
         </div>
 
-        {error && <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
+        <div className="rounded-[15px] border border-[#E7D9C9] bg-[#FBF4E8]/80 p-4">
+          <p className="text-sm font-semibold text-[#2A1D16]">发送前可以这样说明</p>
+          <div className="mt-3 space-y-2 text-[12px] leading-5 text-[#78675B]">
+            <p>1. 这是私密家堂邀请，只用于确认本人档案。</p>
+            <p>2. 对方认领后，可以补充自己的资料和家庭记忆。</p>
+            <p>3. 如果不是本人，可以在认领页选择拒绝，不会关联账号。</p>
+          </div>
+        </div>
+
+        {error && <p className="rounded-xl bg-danger-light px-4 py-2.5 text-sm text-danger">{error}</p>}
 
         {/* Targets */}
         {targets.length === 0 ? (
@@ -94,44 +105,44 @@ export default function InvitePage() {
             icon={<UserPlus size={24} strokeWidth={1.8} />}
             title="暂无待认领成员"
             description="先在家谱中添加亲属，再邀请他们认领"
-            action={<button onClick={() => router.push('/family/relatives/new')} className="inline-flex items-center gap-2 rounded-xl bg-#5A3524 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-#4E342E transition-colors">添加家人</button>}
+            action={<button onClick={() => router.push('/family/relatives/new')} className="wj-primary inline-flex items-center gap-2 rounded-2xl px-5 min-h-[44px] text-sm font-semibold transition-colors">添加家人</button>}
           />
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-stone-500">共 <span className="text-#8D6E63 font-semibold">{targets.length}</span> 位家人待认领</p>
+            <p className="text-sm text-[#8A7465]">共 <span className="text-[#7A4B34] font-semibold">{targets.length}</span> 位家人待认领</p>
             {targets.map((target) => {
               const isCopied = copied === target.person.id;
               const previewToken = target.invite?.token ?? '';
               const inviteText = family ? buildInviteText(target.person, family.displayName, previewToken || '...') : '';
 
               return (
-                <div key={target.person.id} className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+                <div key={target.person.id} className="overflow-hidden rounded-[15px] border border-[#E7D9C9] bg-white/82 shadow-[0_10px_28px_rgba(90,53,36,0.06)]">
                   {/* Person header */}
-                  <div className="flex items-center gap-3 px-5 py-4 border-b border-stone-100">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-600 font-semibold text-sm">
+                  <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--surface-2)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F4E8DC] text-[#6D4C41] font-semibold text-sm">
                       {target.person.display_name.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-stone-800">{target.person.display_name}</p>
-                      <p className="text-xs text-stone-500">家人档案 · 待认领</p>
+                      <p className="text-sm font-semibold text-[#2A1D16]">{target.person.display_name}</p>
+                      <p className="text-xs text-[#8A7465]">家人档案 · 待认领</p>
                     </div>
                     <StatusBadge variant="warning">待认领</StatusBadge>
                   </div>
 
                   {/* Preview */}
                   <div className="px-5 py-4">
-                    <div className="rounded-xl border border-stone-200 bg-[#F8F1E7] p-3 text-xs text-stone-500 leading-relaxed whitespace-pre-line max-h-24 overflow-y-auto">
+                    <div className="max-h-24 overflow-y-auto whitespace-pre-line rounded-2xl border border-[#E7D9C9] bg-[#FBF4E8] p-3 text-xs leading-relaxed text-[#8A7465]">
                       {inviteText || '加载中...'}
                     </div>
                   </div>
 
                   {/* Copy button */}
-                  <div className="border-t border-stone-100 px-5 py-4">
+                  <div className="border-t border-[var(--surface-2)] px-5 py-4">
                     <button onClick={() => handleCopy(target)} disabled={!canManage}
-                      className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98] ${
+                      className={`w-full flex items-center justify-center gap-2 rounded-xl min-h-[44px] text-sm font-semibold transition-all active:scale-[0.98] ${
                         isCopied
-                          ? 'bg-#8B5A3C text-white'
-                          : 'bg-#5A3524 text-white hover:bg-#4E342E shadow-sm'
+                          ? 'bg-[#5A3524] text-white'
+                          : 'wj-primary'
                       } disabled:opacity-50 disabled:pointer-events-none`}>
                       {isCopied ? <><Check size={16} />已复制</> : target.invite ? <><Copy size={15} />复制邀请文案</> : <><Copy size={15} />生成并复制邀请</>}
                     </button>
@@ -142,6 +153,6 @@ export default function InvitePage() {
           </div>
         )}
       </div>
-    </div>
+    </MobilePage>
   );
 }
