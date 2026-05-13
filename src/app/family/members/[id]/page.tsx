@@ -27,7 +27,7 @@ import {
   updatePersonProfile,
 } from '@/lib/services/member-service';
 import { syncPersonBirthdayEvent, unsyncPersonBirthdayEvent } from '@/lib/services/calendar-service';
-import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
+import { relationLabelForSubject } from '@/lib/kinship/relation-display';
 import { listBiographyRecords, createBiographyRecord, deleteBiographyRecord, formatEventDate, type BiographyRecord, type CreateBiographyInput } from '@/lib/services/biography-service';
 import WjTimeline from '@/components/wujia/WjTimeline';
 import { WjFormRow, WjInput, WjSelect } from '@/components/wujia/WjForm';
@@ -40,24 +40,27 @@ const LIVING_LABELS: Record<string, string> = { alive: '健在', deceased: '离�
 const GENDER_LABELS: Record<string, string> = { male: '男', female: '女', unknown: '未知' };
 const VISIBILITY_LABELS: Record<string, string> = { private: '仅自己', family: '家族可见', public: '公开' };
 
-function relationSummaryLabel(item: PersonRelationSummary, currentPersonId: string): string {
-  try {
-    const otherGender = item.otherPerson?.gender ?? undefined;
-    const rel = item.relation;
-    if (rel.relation_type === 'parent_of') {
-      if (rel.from_person_id === currentPersonId) return getKinshipLabel('child', otherGender).label;
-      if (otherGender === 'male') return getKinshipLabel('father', otherGender).label;
-      if (otherGender === 'female') return getKinshipLabel('mother', otherGender).label;
-      return normalizeRelationType('parent_of');
-    }
-    if (rel.relation_type === 'spouse_of') return getKinshipLabel('spouse', otherGender).label;
-    if (rel.relation_type === 'sibling_of') return normalizeRelationType('sibling_of', otherGender);
-    if (rel.relation_type === 'grandparent_of') {
-      if (rel.from_person_id === currentPersonId) return otherGender === 'male' ? '孙子' : otherGender === 'female' ? '孙女' : '孙辈';
-      return normalizeRelationType('grandparent_of', otherGender);
-    }
-    return normalizeRelationType(rel.relation_type, otherGender) || item.label;
-  } catch { return item.label; }
+function relationSummaryLabel(item: PersonRelationSummary): string {
+  if (!item.otherPerson) return item.label;
+  return relationLabelForSubject(item.relation, item.otherPerson.id, item.otherPerson.gender) ?? item.label;
+}
+
+function profileRelationLabel(
+  viewedPerson: PersonProfile,
+  relations: PersonRelationSummary[],
+  viewerPersonId: string | null,
+): string {
+  if (viewerPersonId && viewedPerson.id === viewerPersonId) return '本人';
+
+  if (viewerPersonId) {
+    const directRelation = relations.find((item) => item.otherPerson?.id === viewerPersonId);
+    const label = directRelation
+      ? relationLabelForSubject(directRelation.relation, viewedPerson.id, viewedPerson.gender)
+      : null;
+    if (label) return label;
+  }
+
+  return relations[0] ? relationSummaryLabel(relations[0]) : '家人';
 }
 
 export default function MemberDetailPage() {
@@ -68,6 +71,7 @@ export default function MemberDetailPage() {
   const [relations, setRelations] = useState<PersonRelationSummary[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [canEditSelf, setCanEditSelf] = useState(false);
+  const [viewerPersonId, setViewerPersonId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -114,6 +118,11 @@ export default function MemberDetailPage() {
         setFamily(currentFamily);
         setPerson(profile);
         setRelations(relationSummaries);
+        setViewerPersonId(
+          profile.bound_user_id === user.id
+            ? profile.id
+            : relationSummaries.find((item) => item.otherPerson?.bound_user_id === user.id)?.otherPerson?.id ?? null
+        );
         setCanManage(allowed);
         setCanEditSelf(profile.bound_user_id === user.id);
         // Load biography records
@@ -214,6 +223,7 @@ export default function MemberDetailPage() {
 
   const canEdit = canManage || canEditSelf;
   const isClaimed = person.claim_status === 'claimed';
+  const primaryRelationLabel = profileRelationLabel(person, relations, viewerPersonId);
 
   return (
     <MobilePage>
@@ -253,7 +263,7 @@ export default function MemberDetailPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-[22px] font-bold text-[var(--ink-1)]">{person.display_name}</h1>
-                <span className="rounded-md bg-[var(--surface-2)] px-2 py-0.5 text-[12px] text-[var(--walnut)]">{relations[0] ? relationSummaryLabel(relations[0], person.id) : '家人'}</span>
+                <span className="rounded-md bg-[var(--surface-2)] px-2 py-0.5 text-[12px] text-[var(--walnut)]">{primaryRelationLabel}</span>
               </div>
               <p className="mt-1 text-[13px] text-[var(--ink-3)]">
                 {person.birth_year || '出生年份未填'} · {person.birth_year ? `${new Date().getFullYear() - person.birth_year} 岁` : '年龄未知'}
@@ -441,7 +451,7 @@ export default function MemberDetailPage() {
                   <div className="space-y-2">
                     {relations.map((item) => (
                       <div key={item.relation.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-2)] px-4 py-2.5">
-                        <span className="text-sm font-medium text-[var(--ink-2)]">{relationSummaryLabel(item, person.id)}</span>
+                        <span className="text-sm font-medium text-[var(--ink-2)]">{relationSummaryLabel(item)}</span>
                         <span className="text-sm text-[var(--ink-3)] truncate">{item.otherPerson?.display_name ?? '未知成员'}</span>
                       </div>
                     ))}

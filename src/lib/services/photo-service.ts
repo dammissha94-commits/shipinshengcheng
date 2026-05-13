@@ -1,5 +1,6 @@
 import type { ActionLog, FamilyPhoto } from '@/types/domain';
 import type { CreateFamilyPhotoInput, UpdateFamilyPhotoInput } from '@/types/service';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import {
   canCreateFamilyContent,
@@ -11,7 +12,7 @@ import type { SupabaseServiceClient } from './service-client';
 import { throwServiceError } from './service-client';
 
 type FamilyPhotoStorageClient = SupabaseServiceClient &
-  Pick<ReturnType<typeof createSupabaseBrowserClient>, 'storage'>;
+  Pick<SupabaseClient, 'storage'>;
 
 const SUPABASE_FALLBACK_MESSAGE = '尚未配置 Supabase 环境变量，请先配置 .env.local';
 const FAMILY_PHOTOS_BUCKET = 'family-photos';

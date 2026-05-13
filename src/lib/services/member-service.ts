@@ -9,6 +9,7 @@ import type {
 import { getCurrentUser } from '@/lib/auth/auth-service';
 import { canManageFamily } from '@/lib/auth/permission-service';
 import { createSupabaseServiceClient, hasSupabaseConfig } from '@/lib/supabase/client';
+import { relationLabelForOther } from '@/lib/kinship/relation-display';
 import type { SupabaseServiceClient } from './service-client';
 import { throwServiceError } from './service-client';
 
@@ -276,15 +277,7 @@ export async function getFamilyMemberStats(
 }
 
 export function relationLabel(relation: PersonRelation, currentPersonId: string): string {
-  if (relation.relation_type === 'parent_of') {
-    return relation.from_person_id === currentPersonId ? '子女' : '父母';
-  }
-  if (relation.relation_type === 'spouse_of') return '配偶';
-  if (relation.relation_type === 'sibling_of') return '兄弟姐妹';
-  if (relation.relation_type === 'grandparent_of') {
-    return relation.from_person_id === currentPersonId ? '孙辈' : '祖辈';
-  }
-  return '家族关系';
+  return relationLabelForOther(relation, currentPersonId) ?? '家族关系';
 }
 
 export const listFamilyPersons = listFamilyMembers;

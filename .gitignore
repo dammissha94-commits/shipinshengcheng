@@ -16,4 +16,6 @@ dist/
 Thumbs.db
 tsconfig.tsbuildinfo
 
-.claude/
+.claude/deploy/
+member_diff.txt
+photo_diff.txt

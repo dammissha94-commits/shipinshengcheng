@@ -10,9 +10,9 @@ import { currentLoginRedirectPath } from '@/lib/auth/redirect';
 import { canManageFamily } from '@/lib/auth/permission-service';
 import { hasSupabaseConfig } from '@/lib/supabase/client';
 import { getCurrentFamilySpace } from '@/lib/services/family-service';
-import { listFamilyMembers, listFamilyMemberships, relationLabel } from '@/lib/services/member-service';
+import { listFamilyMembers, listFamilyMemberships } from '@/lib/services/member-service';
 import { listPersonRelations } from '@/lib/services/person-service';
-import { getKinshipLabel, normalizeRelationType } from '@/lib/kinship/kinship-adapter';
+import { relationLabelForSubject } from '@/lib/kinship/relation-display';
 import StatusBadge from '@/components/wujia/StatusBadge';
 import EmptyState from '@/components/wujia/EmptyState';
 import { MobilePage, MobileStatusBar, MobileTopBar } from '@/components/wujia/MobileChrome';
@@ -204,24 +204,7 @@ export default function FamilyMembersPage() {
         || (r.to_person_id === person.id && r.from_person_id === selfPerson?.id)
     );
     if (!connected || !selfPerson) return '家人';
-    try {
-      const fallback = relationLabel(connected, selfPerson.id);
-      if (connected.relation_type === 'parent_of') {
-        if (connected.to_person_id === selfPerson.id) {
-          return person.gender === 'male' ? getKinshipLabel('father', person.gender).label
-            : person.gender === 'female' ? getKinshipLabel('mother', person.gender).label
-            : normalizeRelationType('parent_of') || fallback;
-        }
-        return getKinshipLabel('child', person.gender ?? undefined).label;
-      }
-      if (connected.relation_type === 'spouse_of') return getKinshipLabel('spouse', person.gender ?? undefined).label;
-      if (connected.relation_type === 'sibling_of') return normalizeRelationType('sibling_of', person.gender ?? undefined) || fallback;
-      if (connected.relation_type === 'grandparent_of') {
-        if (connected.to_person_id === selfPerson.id) return normalizeRelationType('grandparent_of', person.gender ?? undefined) || fallback;
-        return person.gender === 'male' ? '孙子' : person.gender === 'female' ? '孙女' : '孙辈';
-      }
-      return normalizeRelationType(connected.relation_type, person.gender ?? undefined) || fallback;
-    } catch { return relationLabel(connected, selfPerson.id); }
+    return relationLabelForSubject(connected, person.id, person.gender) ?? '家人';
   }
 
   return (

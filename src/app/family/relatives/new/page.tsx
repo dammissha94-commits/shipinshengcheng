@@ -31,18 +31,39 @@ const RELATION_LABELS: Partial<Record<Relation, string>> = {
   grandmother_maternal: '外婆',
 };
 
+function normalizeRelationParam(value: string | null): Relation {
+  return value && RELATION_OPTIONS.some((option) => option.value === value)
+    ? (value as Relation)
+    : 'father';
+}
+
+function defaultGenderForRelation(value: Relation): Gender {
+  if (
+    value === 'mother' ||
+    value === 'grandmother_paternal' ||
+    value === 'grandmother_maternal'
+  ) {
+    return 'female';
+  }
+  if (
+    value === 'father' ||
+    value === 'grandfather_paternal' ||
+    value === 'grandfather_maternal'
+  ) {
+    return 'male';
+  }
+  return 'unknown';
+}
+
 function NewRelativeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [family, setFamily] = useState<FamilySpace | null>(null);
   const [selfProfile, setSelfProfile] = useState<PersonProfile | null>(null);
   const [existingPersons, setExistingPersons] = useState<ReturnType<typeof mapProfilesToTreePersons>>([]);
-  const [relation, setRelation] = useState<Relation>(() => {
-    const rel = searchParams.get('relation') as Relation | null;
-    return rel && RELATION_OPTIONS.some((o) => o.value === rel) ? rel : 'father';
-  });
+  const [relation, setRelation] = useState<Relation>(() => normalizeRelationParam(searchParams.get('relation')));
   const [name, setName] = useState('');
-  const [gender, setGender] = useState<Gender>('male');
+  const [gender, setGender] = useState<Gender>(() => defaultGenderForRelation(normalizeRelationParam(searchParams.get('relation'))));
   const [birthYear, setBirthYear] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -164,7 +185,9 @@ function NewRelativeForm() {
                 key={option.value}
                 type="button"
                 onClick={() => {
-                  setRelation(option.value);
+                  const nextRelation = option.value;
+                  setRelation(nextRelation);
+                  setGender(defaultGenderForRelation(nextRelation));
                   setError('');
                 }}
                 className={`min-h-[44px] rounded-[14px] border-2 text-sm font-medium transition ${

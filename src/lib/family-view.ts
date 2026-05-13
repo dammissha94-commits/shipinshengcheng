@@ -46,6 +46,12 @@ export function mapProfilesToTreePersons(
     } else if (relation.relation_type === 'parent_of' && relation.from_person_id === selfProfile.id) {
       targetProfile = byId.get(relation.to_person_id);
       uiRelation = 'child';
+    } else if (relation.relation_type === 'child_of' && relation.from_person_id === selfProfile.id) {
+      targetProfile = byId.get(relation.to_person_id);
+      uiRelation = targetProfile?.gender === 'female' ? 'mother' : 'father';
+    } else if (relation.relation_type === 'child_of' && relation.to_person_id === selfProfile.id) {
+      targetProfile = byId.get(relation.from_person_id);
+      uiRelation = 'child';
     } else if (relation.relation_type === 'spouse_of') {
       const spouseId =
         relation.from_person_id === selfProfile.id ? relation.to_person_id : relation.from_person_id;
